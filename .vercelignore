@@ -1,0 +1,10 @@
+/android/
+/ios/
+/assets/
+/lib/
+/test/
+/dist/
+/build/
+/.dart_tool/
+/docs/
+/.env*

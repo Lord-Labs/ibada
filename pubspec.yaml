@@ -1,0 +1,35 @@
+name: ibada
+description: Offline prayer times and alarms.
+publish_to: none
+version: 1.0.0+1
+environment:
+  sdk: ^3.12.0
+dependencies:
+  flutter:
+    sdk: flutter
+  adhan_dart: 2.0.1
+  geolocator: ^14.1.2
+  hijri_core: ^1.1.0
+  intl: any
+  material_ui: ^1.11.1
+  shared_preferences: ^2.5.6
+  timezone: ^0.11.2
+  timezone_finder: ^1.0.2
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/data/
+    - assets/materials/prayer-horizon.webp
+  fonts:
+    - family: Thmanyah Sans
+      fonts:
+        - asset: assets/fonts/thmanyahsans-Regular.otf
+          weight: 400
+        - asset: assets/fonts/thmanyahsans-Medium.otf
+          weight: 500
+        - asset: assets/fonts/thmanyahsans-Bold.otf
+          weight: 700

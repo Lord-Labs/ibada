@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="PrayerAlarmTheme" parent="@android:style/Theme.Material.NoActionBar">
+        <item name="android:windowBackground">#142C25</item>
+        <item name="android:statusBarColor">#142C25</item>
+        <item name="android:navigationBarColor">#142C25</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:colorAccent">#F4CF90</item>
+    </style>
+</resources>

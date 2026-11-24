@@ -1,0 +1,393 @@
+@font-face {
+  font-family: Alexandria;
+  src: url("./assets/Alexandria.ttf") format("truetype");
+  font-weight: 400 800;
+  font-display: swap;
+}
+
+:root {
+  color-scheme: light;
+  --paper: #f8f7ef;
+  --ink: #142d24;
+  --muted: #4d5e53;
+  --green: #20523e;
+  --line: #d9dfd2;
+  --tint: #e8eee3;
+  --white: #fffef8;
+  --shell: 75rem;
+}
+
+*,
+*::before,
+*::after { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: Alexandria, Tahoma, Arial, sans-serif;
+  line-height: 1.8;
+}
+
+a { color: inherit; }
+h1, h2, p, figure, ol { margin: 0; }
+h1, h2 { text-wrap: balance; }
+.intro, .feature p, .install p, .install li { text-wrap: pretty; }
+
+a:focus-visible {
+  outline: 3px solid var(--green);
+  outline-offset: 5px;
+}
+
+.shell {
+  inline-size: min(var(--shell), 100% - clamp(2rem, 8vw, 7rem));
+  margin-inline: auto;
+}
+
+.skip-link {
+  position: absolute;
+  inset-block-start: .75rem;
+  inset-inline-start: .75rem;
+  z-index: 1;
+  padding: .65rem 1rem;
+  color: var(--white);
+  background: var(--ink);
+  translate: 0 -180%;
+}
+
+.skip-link:focus { translate: 0; }
+.site-header, .site-footer { border-block-end: 1px solid var(--line); }
+
+.header-row, .footer-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem 1.5rem;
+  min-block-size: 5.25rem;
+  padding-block: .7rem;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: .6rem;
+  min-block-size: 44px;
+  font-size: 1.25rem;
+  font-weight: 750;
+  text-decoration: none;
+}
+
+.brand img {
+  flex: none;
+  display: block;
+  border-radius: .55rem;
+}
+
+nav {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: clamp(.75rem, 3vw, 2.25rem);
+}
+
+nav a, .source-link {
+  display: inline-flex;
+  align-items: center;
+  gap: .3em;
+  min-block-size: 44px;
+  color: var(--muted);
+  font-size: .875rem;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+nav a:hover, .source-link:hover {
+  color: var(--green);
+  text-decoration: underline;
+  text-underline-offset: .3em;
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-block-size: 44px;
+  padding: .65rem 1.2rem;
+  border: 1px solid transparent;
+  border-radius: .85rem;
+  font-weight: 700;
+  text-align: center;
+  text-decoration: none;
+  transition: background-color 160ms ease, border-color 160ms ease;
+}
+
+.button-outline {
+  border-color: #bccbbe;
+  color: var(--green);
+  font-size: .875rem;
+}
+
+.button-outline:hover { background-color: var(--tint); }
+
+.button-primary {
+  inline-size: fit-content;
+  min-block-size: 3.65rem;
+  padding-inline: 1.75rem;
+  background: var(--green);
+  color: var(--white);
+}
+
+.button-primary:hover { background-color: #163b2d; }
+
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, .98fr) minmax(0, 1.02fr);
+  align-items: center;
+  gap: clamp(2.5rem, 6.5vw, 6.25rem);
+  padding-block: clamp(2.75rem, 6.2vw, 5.5rem) clamp(3rem, 6vw, 5rem);
+}
+
+.hero-copy { padding-block: .6rem; }
+
+.eyebrow {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  color: var(--green);
+  font-size: .875rem;
+  font-weight: 650;
+}
+
+.eyebrow span {
+  inline-size: .45rem;
+  block-size: .45rem;
+  border-radius: 50%;
+  background: var(--green);
+}
+
+h1 {
+  margin-block: .8rem 1.3rem;
+  font-size: clamp(3.3rem, 6.3vw, 6.25rem);
+  line-height: 1.15;
+  font-weight: 800;
+}
+
+h1 em {
+  color: var(--green);
+  font-style: normal;
+}
+
+.intro {
+  max-inline-size: 29rem;
+  color: var(--muted);
+  font-size: clamp(1rem, 1.6vw, 1.14rem);
+  line-height: 1.95;
+}
+
+.download {
+  margin-block-start: 2rem;
+  scroll-margin-block-start: 1.5rem;
+}
+
+.requirements {
+  margin-block-start: .7rem;
+  color: var(--muted);
+  font-size: .8125rem;
+}
+
+.hero-art {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  place-items: center;
+  min-block-size: clamp(29rem, 42vw, 35rem);
+  overflow: hidden;
+  border-radius: clamp(1.6rem, 3vw, 2.5rem);
+  background: #254e3c;
+  padding: 1.65rem;
+}
+
+.hero-photo, .hero-art::after {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+}
+
+.hero-photo {
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: cover;
+  object-position: 60% center;
+}
+
+.hero-art::after {
+  content: "";
+  background: linear-gradient(150deg, #142d2410 25%, #142d245c);
+}
+
+.phone {
+  inline-size: min(100%, clamp(11.5rem, 18vw, 13.875rem));
+  overflow: hidden;
+  border: .4rem solid #112b23;
+  border-radius: 1.8rem;
+  background: var(--paper);
+  box-shadow: 0 0 0 1px #aebaa081, 0 1.4rem 3rem #0b201bb3;
+  transform: rotate(-6deg);
+}
+
+.phone img {
+  display: block;
+  inline-size: 100%;
+  block-size: auto;
+}
+
+.features {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  border-block: 1px solid var(--line);
+  scroll-margin-block-start: 1rem;
+}
+
+.feature {
+  padding: 2rem clamp(1rem, 2.6vw, 2.5rem);
+}
+
+.feature:first-child { padding-inline-start: 0; }
+.feature + .feature { border-inline-start: 1px solid var(--line); }
+
+.feature h2 {
+  margin-block: .6rem .4rem;
+  font-size: 1rem;
+  font-weight: 750;
+}
+
+.feature p, .install p, .install li { color: var(--muted); }
+
+.feature-mark {
+  display: inline-grid;
+  place-items: center;
+  inline-size: 2.4rem;
+  block-size: 2.4rem;
+  border-radius: .7rem;
+  background: var(--tint);
+  color: var(--green);
+  position: relative;
+}
+
+.feature-mark::before, .feature-mark::after {
+  content: "";
+  grid-area: 1 / 1;
+}
+
+.orbit::before {
+  inline-size: 1.15rem;
+  block-size: .72rem;
+  border: 1.6px solid currentColor;
+  border-radius: 50%;
+  rotate: -28deg;
+}
+
+.orbit::after {
+  inline-size: .28rem;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.bell::before {
+  inline-size: .74rem;
+  block-size: .74rem;
+  border: 1.6px solid currentColor;
+  border-radius: 55% 55% .1rem .1rem;
+  translate: 0 -.08rem;
+}
+
+.bell::after {
+  inline-size: .22rem;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: currentColor;
+  translate: 0 .45rem;
+}
+
+.pin::before {
+  inline-size: .8rem;
+  aspect-ratio: 1;
+  border: 1.6px solid currentColor;
+  border-radius: 55% 55% 55% 0;
+  rotate: -45deg;
+  translate: 0 -.07rem;
+}
+
+.pin::after {
+  inline-size: .22rem;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: currentColor;
+  translate: 0 -.09rem;
+}
+
+.install {
+  padding-block: clamp(2.75rem, 7vw, 5.75rem);
+  scroll-margin-block-start: 1rem;
+}
+
+.install-inner {
+  display: grid;
+  grid-template-columns: minmax(0, .82fr) minmax(0, 1.1fr) minmax(8rem, .55fr);
+  align-items: center;
+  gap: 1.25rem clamp(1.5rem, 4vw, 3.25rem);
+  padding: clamp(1.35rem, 4vw, 3.5rem);
+  border-radius: 1.8rem;
+  background: var(--tint);
+}
+
+.install-photo {
+  display: block;
+  inline-size: 100%;
+  block-size: auto;
+  aspect-ratio: 1;
+  border-radius: .95rem;
+  object-fit: cover;
+  object-position: left center;
+  background: var(--green);
+}
+
+.install h2 {
+  margin-block-end: .45rem;
+  font-size: clamp(1.55rem, 3.25vw, 2.25rem);
+  line-height: 1.4;
+}
+
+.install ol { padding-inline-start: 1.75rem; }
+.install li + li { margin-block-start: .45rem; }
+.install li::marker { color: var(--green); font-weight: 700; }
+.site-footer { border-block-start: 1px solid var(--line); border-block-end: 0; }
+.footer-row { min-block-size: 4.65rem; }
+.site-footer .brand { font-size: 1rem; }
+
+@media (max-width: 52rem) {
+  .hero { gap: 2rem; }
+  .hero-art { min-block-size: 28rem; }
+  h1 { font-size: clamp(2.9rem, 6.8vw, 4.25rem); }
+  .install-inner { grid-template-columns: minmax(0, .85fr) minmax(0, 1fr); }
+  .install-photo { grid-column: 1 / -1; block-size: 7rem; }
+}
+
+@media (max-width: 43rem) {
+  .header-row { flex-wrap: wrap; gap: .35rem 1rem; }
+  .header-row nav { order: 1; inline-size: 100%; justify-content: flex-start; }
+  .hero { grid-template-columns: minmax(0, 1fr); padding-block-start: 2rem; }
+  .hero-copy { padding: 0; }
+  .hero-art { min-block-size: 24.75rem; }
+  .phone { inline-size: min(100%, 10.75rem); border-radius: 1.5rem; }
+  .features, .install-inner { grid-template-columns: minmax(0, 1fr); }
+  .feature, .feature:first-child { padding: 1.25rem 0; }
+  .feature + .feature { border-inline-start: 0; border-block-start: 1px solid var(--line); }
+  .feature p { max-inline-size: 30rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .button { transition: none; }
+}
