@@ -104,6 +104,9 @@ class _HomeState extends State<_Home> with WidgetsBindingObserver {
     WidgetsBinding.instance.addObserver(this);
     _ticker = Timer.periodic(const Duration(seconds: 1), (_) => _tick());
     unawaited(_resume());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) unawaited(_requestStartupPermissions());
+    });
   }
 
   void _tick() {
@@ -127,23 +130,50 @@ class _HomeState extends State<_Home> with WidgetsBindingObserver {
     await _readStatus();
     if (!mounted) return;
     _schedule();
-    if (_settings.place.usesGps && !_repositioning) {
-      final previous = _settings.place;
-      _repositioning = true;
+    if (_settings.place.usesGps) await _refreshPosition();
+  }
+
+  Future<void> _requestStartupPermissions() async {
+    if (!_alarms.supported ||
+        !await widget.data.claimStartupPermissions() ||
+        !mounted) {
+      return;
+    }
+
+    if (!_settings.confirmedPlace) {
       try {
-        final updated = await _cities.current(askPermission: false);
-        if (mounted &&
-            identical(previous, _settings.place) &&
-            (updated.zone != previous.zone ||
-                (updated.latitude - previous.latitude).abs() > .02 ||
-                (updated.longitude - previous.longitude).abs() > .02)) {
-          _update(_settings.copyWith(place: updated));
-        }
+        await _cities.requestPermission();
       } on Exception {
-        // Keep the last confirmed position while GPS is unavailable.
-      } finally {
-        _repositioning = false;
+        // The city picker remains available if the system cannot use location.
       }
+      if (!mounted) return;
+      if (!_settings.confirmedPlace) unawaited(_refreshPosition(initial: true));
+    }
+
+    await _request('startupNotifications');
+    if (mounted && _status.notifications && !_settings.alarms) {
+      _update(_settings.copyWith(alarms: true));
+    }
+  }
+
+  Future<void> _refreshPosition({bool initial = false}) async {
+    if (_repositioning) return;
+    final previous = _settings.place;
+    _repositioning = true;
+    try {
+      final updated = await _cities.current(askPermission: false);
+      if (!mounted || !identical(previous, _settings.place)) return;
+      final moved =
+          updated.zone != previous.zone ||
+          (updated.latitude - previous.latitude).abs() > .02 ||
+          (updated.longitude - previous.longitude).abs() > .02;
+      if (initial ? !_settings.confirmedPlace : moved) {
+        _update(_settings.copyWith(place: updated, confirmedPlace: true));
+      }
+    } on Exception {
+      // Keep the current place available while GPS is unavailable.
+    } finally {
+      _repositioning = false;
     }
   }
 
@@ -310,6 +340,14 @@ class _HomeState extends State<_Home> with WidgetsBindingObserver {
                 clock: _clock,
                 onLocation: _choosePlace,
                 onAlerts: () => setState(() => _tab = 2),
+                onExactAlarm:
+                    Theme.of(context).platform == TargetPlatform.android &&
+                        _settings.alarms &&
+                        _status.supported &&
+                        _status.notifications &&
+                        !_status.exact
+                    ? () => _request('exact')
+                    : null,
                 onDay: (offset) => setState(() => _dayOffset = offset),
                 onPrayer: (prayer) =>
                     showPrayerOptions(context, _settings, prayer, _update),

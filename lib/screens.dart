@@ -93,6 +93,7 @@ class TodayScreen extends StatelessWidget {
     required this.clock,
     required this.onLocation,
     required this.onAlerts,
+    this.onExactAlarm,
     required this.onDay,
     required this.onPrayer,
   });
@@ -101,6 +102,7 @@ class TodayScreen extends StatelessWidget {
   final int offset;
   final ValueNotifier<DateTime> clock;
   final VoidCallback onLocation, onAlerts;
+  final VoidCallback? onExactAlarm;
   final ValueChanged<int> onDay;
   final ValueChanged<Prayer> onPrayer;
 
@@ -113,18 +115,13 @@ class TodayScreen extends StatelessWidget {
       children: [
         Row(
           children: [
-            DecoratedBox(
-              decoration: BoxDecoration(
-                color: colors.accent,
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(9),
-                child: Icon(
-                  Icons.mosque_outlined,
-                  size: 22,
-                  color: Theme.of(context).colorScheme.onPrimary,
-                ),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Image.asset(
+                'assets/materials/ibada-icon.png',
+                width: 40,
+                height: 40,
+                excludeFromSemantics: true,
               ),
             ),
             const SizedBox(width: 9),
@@ -215,6 +212,15 @@ class TodayScreen extends StatelessWidget {
             ),
           ],
         ),
+        if (!settings.confirmedPlace)
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: TextButton.icon(
+              onPressed: onLocation,
+              icon: const Icon(Icons.my_location_rounded, size: 17),
+              label: const Text('اختر موقعك لحساب مواقيتك'),
+            ),
+          ),
         const SizedBox(height: 17),
         ValueListenableBuilder(
           valueListenable: clock,
@@ -228,6 +234,15 @@ class TodayScreen extends StatelessWidget {
             );
           },
         ),
+        if (onExactAlarm != null)
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: TextButton.icon(
+              onPressed: onExactAlarm,
+              icon: const Icon(Icons.alarm_add_outlined, size: 18),
+              label: const Text('فعّل المنبّه الدقيق'),
+            ),
+          ),
         const SizedBox(height: 19),
         Row(
           children: [
@@ -278,14 +293,6 @@ class TodayScreen extends StatelessWidget {
           },
         ),
         if (day.estimated) const _EstimateNote(),
-        if (!settings.confirmedPlace) ...[
-          const SizedBox(height: 12),
-          TextButton.icon(
-            onPressed: onLocation,
-            icon: const Icon(Icons.my_location_rounded, size: 17),
-            label: const Text('اختر موقعك لحساب مواقيتك'),
-          ),
-        ],
       ],
     );
   }

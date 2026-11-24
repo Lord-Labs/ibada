@@ -13,6 +13,7 @@ import 'package:timezone_finder/timezone_finder.dart' as zones;
 import 'prayer_times.dart';
 
 const _settingsKey = 'prayer-settings';
+const _startupPermissionsKey = 'startup-permissions-requested';
 const _zonesKey = 'tz-data';
 const _etagKey = 'tz-etag';
 const _checkedKey = 'tz-checked';
@@ -60,6 +61,15 @@ class LocalData {
 
   Future<void> save(PrayerSettings settings) =>
       _preferences.setString(_settingsKey, jsonEncode(settings.toJson()));
+
+  Future<bool> claimStartupPermissions() async {
+    if (await _preferences.getBool(_startupPermissionsKey) == true ||
+        await _preferences.getString(_settingsKey) != null) {
+      return false;
+    }
+    await _preferences.setBool(_startupPermissionsKey, true);
+    return true;
+  }
 
   Future<bool> refreshTimeZones(String activeZone) async {
     final cached = await _preferences.getString(_zonesKey);
@@ -148,10 +158,9 @@ class CityDirectory {
     if (!await Geolocator.isLocationServiceEnabled()) {
       throw const LocationProblem('شغّل خدمة الموقع أو اختر مدينتك يدويًا.');
     }
-    var permission = await Geolocator.checkPermission();
-    if (askPermission && permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-    }
+    final permission = askPermission
+        ? await requestPermission()
+        : await Geolocator.checkPermission();
     if (permission == LocationPermission.deniedForever ||
         permission == LocationPermission.denied ||
         permission == LocationPermission.unableToDetermine) {
@@ -166,6 +175,13 @@ class CityDirectory {
       ),
     );
     return coordinates(position.latitude, position.longitude, usesGps: true);
+  }
+
+  Future<LocationPermission> requestPermission() async {
+    final permission = await Geolocator.checkPermission();
+    return permission == LocationPermission.denied
+        ? Geolocator.requestPermission()
+        : permission;
   }
 
   Future<Place> coordinates(

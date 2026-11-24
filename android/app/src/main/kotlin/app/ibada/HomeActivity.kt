@@ -41,7 +41,7 @@ class HomeActivity : FlutterActivity() {
     private fun request(permission: String, result: MethodChannel.Result) {
         val app = Uri.parse("package:$packageName")
         when (permission) {
-            "notifications" -> {
+            "notifications", "startupNotifications" -> {
                 if (Build.VERSION.SDK_INT >= 33 &&
                     checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
                 ) {
@@ -54,12 +54,14 @@ class HomeActivity : FlutterActivity() {
                         return
                     }
                 }
-                val intent = if (PrayerAlarm.notificationAllowed(this)) {
-                    channelSettings()
-                } else {
-                    Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, packageName)
+                if (permission == "notifications") {
+                    val intent = if (PrayerAlarm.notificationAllowed(this)) {
+                        channelSettings()
+                    } else {
+                        Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, packageName)
+                    }
+                    startActivity(intent)
                 }
-                startActivity(intent)
             }
             "exact" -> if (Build.VERSION.SDK_INT >= 31 && !PrayerAlarm.exact(this)) {
                 startActivity(Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM, app))
