@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart' show ValueListenable;
 import 'package:flutter/services.dart';
@@ -164,40 +165,49 @@ class _AdhkarScreenState extends State<AdhkarScreen>
     );
   }
 
-  void _openGroup(AdhkarGroup group) {
+  Future<void> _openGroup(AdhkarGroup group) async {
     if (group != AdhkarGroup.afterPrayer) {
       _openReader(context, group);
       return;
     }
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (routeContext) => Scaffold(
-          appBar: AppBar(title: Text(group.title)),
-          body: SafeArea(
-            top: false,
-            child: ValueListenableBuilder(
+    final prayer = await showModalBottomSheet<Prayer>(
+      context: context,
+      useSafeArea: true,
+      showDragHandle: true,
+      isScrollControlled: true,
+      builder: (sheetContext) => SafeArea(
+        top: false,
+        child: _DevotionPage(
+          shrinkWrap: true,
+          children: [
+            const IbadaHeading('أذكار بعد الصلاة', subtitle: 'اختر الصلاة'),
+            ValueListenableBuilder(
               valueListenable: _counts,
-              builder: (_, counts, _) => _DevotionPage(
-                children: [
-                  const _PageHeading(
-                    'اختر الصلاة',
-                    'يُحفظ تقدّم كل صلاة على حدة.',
-                  ),
-                  for (final prayer in _fivePrayers)
-                    _AdhkarTile(
-                      title: prayer.label,
-                      icon: Icons.schedule_outlined,
-                      completed: _completedCount(counts, group, prayer),
-                      total: group.entries.length,
-                      onTap: () => _openReader(routeContext, group, prayer),
-                    ),
-                ],
+              builder: (_, counts, _) => IbadaSurface(
+                child: Column(
+                  children: [
+                    for (final prayer in _fivePrayers)
+                      ListTile(
+                        leading: const Icon(Icons.schedule_outlined),
+                        title: Text(prayer.label),
+                        subtitle: Text(
+                          _groupProgress(
+                            _completedCount(counts, group, prayer),
+                            group.entries.length,
+                          ),
+                        ),
+                        trailing: const Icon(Icons.chevron_left_rounded),
+                        onTap: () => Navigator.pop(sheetContext, prayer),
+                      ),
+                  ],
+                ),
               ),
             ),
-          ),
+          ],
         ),
       ),
     );
+    if (mounted && prayer != null) _openReader(context, group, prayer);
   }
 
   @override
@@ -213,19 +223,17 @@ class _AdhkarScreenState extends State<AdhkarScreen>
     valueListenable: _counts,
     builder: (_, counts, _) => _DevotionPage(
       children: [
-        const _PageHeading(
-          'الأذكار',
-          'اقرأ على مهل، وتابع ما قرأت خلال اليوم.',
-        ),
+        const IbadaHeading('الأذكار', subtitle: 'تقدّمك محفوظ خلال اليوم'),
         for (final group in AdhkarGroup.values)
           _AdhkarTile(
             title: group.title,
             icon: switch (group) {
-              AdhkarGroup.morning => Icons.wb_sunny_outlined,
-              AdhkarGroup.evening => Icons.wb_twilight_outlined,
+              AdhkarGroup.morning => Icons.light_mode_outlined,
+              AdhkarGroup.evening => Icons.wb_twilight_rounded,
               AdhkarGroup.afterPrayer => Icons.bookmark_border_rounded,
-              AdhkarGroup.sleep => Icons.nightlight_outlined,
+              AdhkarGroup.sleep => Icons.bedtime_outlined,
             },
+            warm: group == AdhkarGroup.morning || group == AdhkarGroup.evening,
             completed: group == AdhkarGroup.afterPrayer
                 ? null
                 : _completedCount(counts, group, null),
@@ -237,10 +245,17 @@ class _AdhkarScreenState extends State<AdhkarScreen>
   );
 }
 
+String _groupProgress(int completed, int total) => switch (completed) {
+  0 => '${arabicDigits(total)} أذكار',
+  _ when completed == total => 'اكتملت القراءة',
+  _ => 'قرأت ${arabicDigits(completed)} من ${arabicDigits(total)}',
+};
+
 class _AdhkarTile extends StatelessWidget {
   const _AdhkarTile({
     required this.title,
     required this.icon,
+    required this.warm,
     required this.completed,
     required this.total,
     required this.onTap,
@@ -248,6 +263,7 @@ class _AdhkarTile extends StatelessWidget {
 
   final String title;
   final IconData icon;
+  final bool warm;
   final int? completed;
   final int total;
   final VoidCallback? onTap;
@@ -256,34 +272,55 @@ class _AdhkarTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = IbadaColors.of(context);
     final progress = completed;
-    return _DevotionCard(
+    return IbadaSurface(
       child: ListTile(
         onTap: onTap,
-        minVerticalPadding: 14,
+        minVerticalPadding: 16,
         contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-        leading: CircleAvatar(
-          backgroundColor: colors.tint,
-          foregroundColor: colors.tintInk,
-          child: Icon(progress == total ? Icons.check_rounded : icon),
+        leading: ExcludeSemantics(
+          child: Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: warm ? colors.sand : colors.tint,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Icon(
+              progress == total ? Icons.check_rounded : icon,
+              color: warm ? colors.sandInk : colors.tintInk,
+            ),
+          ),
         ),
         title: Text(
           title,
-          style: TextStyle(color: colors.ink, fontWeight: FontWeight.w700),
+          style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
         ),
         subtitle: Padding(
-          padding: const EdgeInsets.only(top: 4),
-          child: Text(
-            progress == null
-                ? 'اختر من الصلوات الخمس'
-                : progress == total
-                ? 'اكتملت القراءة'
-                : progress == 0
-                ? '${arabicDigits(total)} أذكار'
-                : 'قرأت ${arabicDigits(progress)} من ${arabicDigits(total)}',
-            style: TextStyle(color: colors.muted),
+          padding: const EdgeInsets.only(top: 5),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                progress == null
+                    ? 'اختر الصلاة'
+                    : _groupProgress(progress, total),
+                style: TextStyle(color: colors.muted, height: 1.45),
+              ),
+              if (progress != null) ...[
+                const SizedBox(height: 10),
+                ExcludeSemantics(
+                  child: LinearProgressIndicator(
+                    value: progress / total,
+                    minHeight: 4,
+                    backgroundColor: colors.tint,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+              ],
+            ],
           ),
         ),
-        trailing: const Icon(Icons.chevron_left_rounded),
+        trailing: Icon(Icons.chevron_left_rounded, color: colors.accent),
       ),
     );
   }
@@ -337,6 +374,44 @@ class _AdhkarReaderState extends State<_AdhkarReader> {
     }
   }
 
+  Future<void> _openIndex() async {
+    final entries = widget.group.entries;
+    final index = await showModalBottomSheet<int>(
+      context: context,
+      useSafeArea: true,
+      showDragHandle: true,
+      isScrollControlled: true,
+      builder: (sheetContext) => SafeArea(
+        top: false,
+        child: _DevotionPage(
+          shrinkWrap: true,
+          children: [
+            const IbadaHeading('قائمة الأذكار'),
+            IbadaSurface(
+              child: Column(
+                children: [
+                  for (final (index, entry) in entries.indexed)
+                    ListTile(
+                      selected: index == _index,
+                      leading: Text(arabicDigits(index + 1)),
+                      title: Text(entry.title),
+                      trailing:
+                          _count(widget.counts.value, entry) ==
+                              entry.repetitions
+                          ? const Icon(Icons.check_rounded, semanticLabel: 'تم')
+                          : null,
+                      onTap: () => Navigator.pop(sheetContext, index),
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (mounted && index != null) _goTo(index);
+  }
+
   @override
   void dispose() {
     _scroll.dispose();
@@ -355,10 +430,16 @@ class _AdhkarReaderState extends State<_AdhkarReader> {
       appBar: AppBar(
         title: Text(title),
         actions: [
-          IconButton(
-            tooltip: 'تصفير تقدّم القراءة',
-            onPressed: _reset,
-            icon: const Icon(Icons.restart_alt_rounded),
+          PopupMenuButton<String>(
+            tooltip: 'خيارات القراءة',
+            icon: const Icon(Icons.more_horiz_rounded),
+            onSelected: (_) => _reset(),
+            itemBuilder: (_) => const [
+              PopupMenuItem<String>(
+                value: 'reset',
+                child: Text('تصفير تقدّم القراءة'),
+              ),
+            ],
           ),
         ],
       ),
@@ -373,97 +454,157 @@ class _AdhkarReaderState extends State<_AdhkarReader> {
               widget.prayer,
             );
             final count = _count(counts, entry);
-            final isDone = count >= entry.repetitions;
-            return _DevotionPage(
-              controller: _scroll,
+            final isDone = count == entry.repetitions;
+            final firstUnread = entries.indexWhere(
+              (item) => _count(counts, item) < item.repetitions,
+            );
+            final last = _index == entries.length - 1;
+            return Column(
               children: [
-                Text(
-                  'الذكر ${arabicDigits(_index + 1)} من ${arabicDigits(entries.length)}',
-                  style: TextStyle(color: colors.muted),
-                ),
-                LinearProgressIndicator(
-                  value: complete / entries.length,
-                  semanticsLabel:
-                      'تقدّم المجموعة، ${arabicDigits(complete)} من ${arabicDigits(entries.length)}',
-                  borderRadius: BorderRadius.circular(6),
-                  minHeight: 5,
-                ),
-                _DevotionCard(
-                  child: Padding(
-                    padding: const EdgeInsets.all(21),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          entry.title,
-                          style: TextStyle(
-                            color: colors.ink,
-                            fontSize: 19,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        const SizedBox(height: 14),
-                        SelectableText(
-                          entry.text,
-                          textDirection: TextDirection.rtl,
-                          style: TextStyle(
-                            color: colors.ink,
-                            fontSize: 25,
-                            height: 1.9,
-                          ),
-                        ),
-                        if (entry.instruction
-                            case final String instruction) ...[
-                          const SizedBox(height: 15),
+                Expanded(
+                  child: _DevotionPage(
+                    controller: _scroll,
+                    children: [
+                      Wrap(
+                        alignment: WrapAlignment.spaceBetween,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        spacing: 8,
+                        children: [
                           Text(
-                            instruction,
-                            style: TextStyle(color: colors.muted),
+                            'الذكر ${arabicDigits(_index + 1)} من ${arabicDigits(entries.length)}',
+                            style: TextStyle(
+                              color: colors.accent,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          IconButton.filledTonal(
+                            tooltip: 'قائمة الأذكار',
+                            onPressed: _openIndex,
+                            icon: const Icon(
+                              Icons.format_list_numbered_rtl_rounded,
+                            ),
                           ),
                         ],
-                        const SizedBox(height: 16),
-                        Text(
-                          entry.source,
-                          style: TextStyle(color: colors.muted, fontSize: 13),
+                      ),
+                      LinearProgressIndicator(
+                        value: complete / entries.length,
+                        semanticsLabel:
+                            'تقدّم المجموعة، ${arabicDigits(complete)} من ${arabicDigits(entries.length)}',
+                        backgroundColor: colors.tint,
+                        borderRadius: BorderRadius.circular(6),
+                        minHeight: 5,
+                      ),
+                      IbadaSurface(
+                        child: Padding(
+                          padding: const EdgeInsets.all(22),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              IbadaHeading(entry.title, compact: true),
+                              const SizedBox(height: 16),
+                              SelectableText(
+                                entry.text,
+                                key: ValueKey(entry.id),
+                                style: TextStyle(
+                                  color: colors.ink,
+                                  fontSize: 24,
+                                  height: 1.95,
+                                ),
+                              ),
+                              if (entry.instruction
+                                  case final String instruction) ...[
+                                const SizedBox(height: 16),
+                                Text(
+                                  instruction,
+                                  style: TextStyle(
+                                    color: colors.muted,
+                                    height: 1.6,
+                                  ),
+                                ),
+                              ],
+                              const SizedBox(height: 17),
+                              const Divider(height: 1),
+                              const SizedBox(height: 12),
+                              Text(
+                                entry.source,
+                                style: TextStyle(
+                                  color: colors.muted,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
-                if (entry.repetitions > 1)
-                  Text(
-                    '${arabicDigits(count)} من ${arabicDigits(entry.repetitions)} مرات',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: colors.muted),
+                _DevotionActions(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextButton(
+                              onPressed: _index == 0
+                                  ? null
+                                  : () => _goTo(_index - 1),
+                              child: const Text('السابق'),
+                            ),
+                          ),
+                          if (entry.repetitions > 1)
+                            Flexible(
+                              child: Text(
+                                '${arabicDigits(count)} من ${arabicDigits(entry.repetitions)} مرات',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: colors.muted,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ),
+                          Expanded(
+                            child: TextButton(
+                              onPressed: !last
+                                  ? () => _goTo(_index + 1)
+                                  : !isDone
+                                  ? null
+                                  : firstUnread < 0
+                                  ? () => Navigator.pop(context)
+                                  : () => _goTo(firstUnread),
+                              child: Text(
+                                !last
+                                    ? 'التالي'
+                                    : firstUnread < 0
+                                    ? 'إنهاء'
+                                    : 'متابعة',
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      FilledButton.icon(
+                        style: FilledButton.styleFrom(
+                          minimumSize: const Size(0, 56),
+                        ),
+                        onPressed: isDone
+                            ? null
+                            : () => widget.increment(entry),
+                        icon: Icon(
+                          isDone ? Icons.check_rounded : Icons.add_rounded,
+                        ),
+                        label: Text(
+                          isDone
+                              ? 'تم الذكر'
+                              : entry.repetitions == 1
+                              ? 'تسجيل القراءة'
+                              : 'عدّ مرة',
+                        ),
+                      ),
+                    ],
                   ),
-                FilledButton.icon(
-                  onPressed: isDone ? null : () => widget.increment(entry),
-                  icon: Icon(isDone ? Icons.check_rounded : Icons.add_rounded),
-                  label: Text(
-                    isDone
-                        ? 'تم الذكر'
-                        : entry.repetitions == 1
-                        ? 'تسجيل القراءة'
-                        : 'عدّ مرة',
-                  ),
-                ),
-                Wrap(
-                  alignment: WrapAlignment.spaceBetween,
-                  runSpacing: 4,
-                  children: [
-                    TextButton.icon(
-                      onPressed: _index == 0 ? null : () => _goTo(_index - 1),
-                      icon: const Icon(Icons.chevron_right_rounded),
-                      label: const Text('السابق'),
-                    ),
-                    TextButton.icon(
-                      onPressed: _index == entries.length - 1
-                          ? null
-                          : () => _goTo(_index + 1),
-                      iconAlignment: IconAlignment.end,
-                      icon: const Icon(Icons.chevron_left_rounded),
-                      label: const Text('التالي'),
-                    ),
-                  ],
                 ),
               ],
             );
@@ -538,138 +679,181 @@ class _TasbeehScreenState extends State<TasbeehScreen> {
     final colors = IbadaColors.of(context);
     final reached = _target > 0 && _count >= _target;
     final formattedCount = arabicDigits(_count);
-    return _DevotionPage(
+    final countSummary = _target == 0
+        ? 'العدّ: $formattedCount'
+        : '$formattedCount من ${arabicDigits(_target)}';
+    return Column(
       children: [
-        const _PageHeading('السبحة', 'اضبط هدفك أو اختر العدّ الحر.'),
-        _DevotionCard(
-          child: Padding(
-            padding: const EdgeInsets.all(22),
-            child: Column(
-              children: [
-                Wrap(
-                  alignment: WrapAlignment.center,
-                  spacing: 8,
-                  runSpacing: 6,
-                  children: [
-                    for (final target in _targets)
-                      ChoiceChip(
-                        label: Text(target == 0 ? 'حر' : arabicDigits(target)),
-                        selected: _target == target,
-                        onSelected: !_loaded
-                            ? null
-                            : (selected) {
-                                if (!selected) return;
-                                setState(() => _target = target);
-                                unawaited(_save());
-                              },
+        Expanded(
+          child: _DevotionPage(
+            children: [
+              const IbadaHeading('السبحة', subtitle: 'اختر هدف التسبيح'),
+              Wrap(
+                spacing: 8,
+                runSpacing: 4,
+                children: [
+                  for (final target in _targets)
+                    ChoiceChip(
+                      label: Text(
+                        target == 0 ? 'عدّ حر' : arabicDigits(target),
                       ),
-                  ],
-                ),
-                const SizedBox(height: 24),
-                Semantics(
-                  button: true,
-                  enabled: _loaded,
-                  onTap: _loaded ? _increment : null,
-                  label: 'زيادة العدّ',
-                  value: formattedCount,
-                  excludeSemantics: true,
-                  child: SizedBox(
-                    width: 184,
-                    height: 184,
-                    child: Material(
-                      color: IbadaColors.pine,
-                      shape: const CircleBorder(),
-                      clipBehavior: Clip.antiAlias,
-                      child: InkWell(
-                        onTap: _loaded ? _increment : null,
-                        splashColor: Colors.white24,
-                        child: Padding(
-                          padding: const EdgeInsets.all(24),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Flexible(
-                                child: FittedBox(
-                                  fit: BoxFit.scaleDown,
-                                  child: Text(
-                                    formattedCount,
-                                    textDirection: TextDirection.ltr,
-                                    style: const TextStyle(
-                                      color: IbadaColors.cream,
-                                      fontSize: 49,
-                                      height: 1.15,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                ),
+                      selected: _target == target,
+                      onSelected: !_loaded
+                          ? null
+                          : (selected) {
+                              if (!selected) return;
+                              setState(() => _target = target);
+                              unawaited(_save());
+                            },
+                    ),
+                ],
+              ),
+              IbadaSurface(
+                color: colors.tint,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 20,
+                    horizontal: 16,
+                  ),
+                  child: Column(
+                    children: [
+                      Text(
+                        formattedCount,
+                        textAlign: TextAlign.center,
+                        textDirection: TextDirection.ltr,
+                        style: TextStyle(
+                          color: colors.tintInk,
+                          fontSize: 58,
+                          height: 1.18,
+                          fontWeight: FontWeight.w700,
+                          fontFeatures: const [FontFeature.tabularFigures()],
+                        ),
+                      ),
+                      if (_target > 0) ...[
+                        const SizedBox(height: 16),
+                        ExcludeSemantics(
+                          child: SizedBox(
+                            width: 264,
+                            height: 22,
+                            child: CustomPaint(
+                              painter: _BeadProgress(
+                                filled: (_count * 33 ~/ _target).clamp(0, 33),
+                                active: colors.accent,
+                                inactive: colors.accent.withValues(alpha: .26),
                               ),
-                              const SizedBox(height: 6),
-                              const Text(
-                                'اضغط للتسبيح',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  color: IbadaColors.pale,
-                                  fontSize: 13,
-                                  height: 1.35,
-                                ),
-                              ),
-                            ],
+                            ),
                           ),
+                        ),
+                      ],
+                      if (reached)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: Semantics(
+                            liveRegion: true,
+                            child: const Text('أتممت الهدف'),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+              Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: TextButton.icon(
+                  onPressed: _count > 0 ? _reset : null,
+                  icon: const Icon(Icons.restart_alt_rounded),
+                  label: const Text('تصفير العدّ'),
+                ),
+              ),
+            ],
+          ),
+        ),
+        _DevotionActions(
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 5),
+                child: ExcludeSemantics(
+                  child: Text(
+                    countSummary,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: colors.tintInk,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ),
+              Row(
+                children: [
+                  Expanded(
+                    child: Semantics(
+                      value: countSummary,
+                      child: FilledButton.icon(
+                        style: FilledButton.styleFrom(
+                          minimumSize: const Size(0, 64),
+                        ),
+                        onPressed: _loaded ? _increment : null,
+                        icon: const Icon(Icons.add_rounded),
+                        label: const Text(
+                          'اضغط للتسبيح',
+                          textAlign: TextAlign.center,
                         ),
                       ),
                     ),
                   ),
-                ),
-                if (_target > 0) ...[
-                  const SizedBox(height: 17),
-                  Text(
-                    '$formattedCount من ${arabicDigits(_target)}',
-                    style: TextStyle(color: colors.muted),
-                  ),
-                  const SizedBox(height: 8),
-                  LinearProgressIndicator(
-                    value: (_count / _target).clamp(0, 1),
-                    minHeight: 5,
-                    borderRadius: BorderRadius.circular(5),
-                    semanticsLabel: 'تقدّم الهدف',
+                  const SizedBox(width: 8),
+                  IconButton.filledTonal(
+                    style: IconButton.styleFrom(
+                      minimumSize: const Size(56, 56),
+                    ),
+                    tooltip: 'التراجع عن آخر عدّة',
+                    onPressed: _count > 0
+                        ? () => _changeCount(_count - 1)
+                        : null,
+                    icon: const Icon(Icons.undo_rounded),
                   ),
                 ],
-                if (reached) ...[
-                  const SizedBox(height: 10),
-                  Semantics(
-                    liveRegion: true,
-                    child: Text(
-                      'أتممت الهدف',
-                      style: TextStyle(color: colors.accent),
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 10),
-                Wrap(
-                  alignment: WrapAlignment.center,
-                  spacing: 10,
-                  children: [
-                    IconButton(
-                      tooltip: 'التراجع عن آخر عدّة',
-                      onPressed: _count > 0
-                          ? () => _changeCount(_count - 1)
-                          : null,
-                      icon: const Icon(Icons.remove_rounded),
-                    ),
-                    TextButton.icon(
-                      onPressed: _count > 0 ? _reset : null,
-                      icon: const Icon(Icons.restart_alt_rounded),
-                      label: const Text('تصفير العدّ'),
-                    ),
-                  ],
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ],
     );
   }
+}
+
+class _BeadProgress extends CustomPainter {
+  const _BeadProgress({
+    required this.filled,
+    required this.active,
+    required this.inactive,
+  });
+
+  final int filled;
+  final Color active, inactive;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final step = size.width / 33;
+    final radius = math.min(3.1, step * .34);
+    final activePaint = Paint()..color = active;
+    final inactivePaint = Paint()..color = inactive;
+    for (var i = 0; i < 33; i++) {
+      final y = size.height * (.34 + .34 * math.sin(i * math.pi / 32));
+      canvas.drawCircle(
+        Offset(size.width - step * (i + .5), y),
+        radius,
+        i < filled ? activePaint : inactivePaint,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(_BeadProgress oldDelegate) =>
+      filled != oldDelegate.filled ||
+      active != oldDelegate.active ||
+      inactive != oldDelegate.inactive;
 }
 
 Future<bool> _confirmReset(BuildContext context, String question) async {
@@ -699,18 +883,26 @@ void _showSaveError(BuildContext context) {
 }
 
 class _DevotionPage extends StatelessWidget {
-  const _DevotionPage({required this.children, this.controller});
+  const _DevotionPage({
+    required this.children,
+    this.controller,
+    this.shrinkWrap = false,
+  });
 
   final List<Widget> children;
   final ScrollController? controller;
+  final bool shrinkWrap;
 
   @override
-  Widget build(BuildContext context) => Center(
+  Widget build(BuildContext context) => Align(
+    alignment: Alignment.topCenter,
+    heightFactor: shrinkWrap ? 1 : null,
     child: ConstrainedBox(
       constraints: const BoxConstraints(maxWidth: 640),
       child: ListView.separated(
         controller: controller,
-        padding: const EdgeInsetsDirectional.fromSTEB(20, 16, 20, 28),
+        shrinkWrap: shrinkWrap,
+        padding: const EdgeInsetsDirectional.fromSTEB(20, 12, 20, 16),
         itemCount: children.length,
         itemBuilder: (_, index) => children[index],
         separatorBuilder: (_, _) => const SizedBox(height: 12),
@@ -719,58 +911,29 @@ class _DevotionPage extends StatelessWidget {
   );
 }
 
-class _PageHeading extends StatelessWidget {
-  const _PageHeading(this.title, this.subtitle);
-
-  final String title, subtitle;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = IbadaColors.of(context);
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 7),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Semantics(
-            header: true,
-            child: Text(
-              title,
-              style: TextStyle(
-                color: colors.ink,
-                fontSize: 30,
-                height: 1.25,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            subtitle,
-            style: TextStyle(color: colors.muted, fontSize: 15, height: 1.5),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _DevotionCard extends StatelessWidget {
-  const _DevotionCard({required this.child});
+class _DevotionActions extends StatelessWidget {
+  const _DevotionActions({required this.child});
 
   final Widget child;
 
   @override
   Widget build(BuildContext context) {
     final colors = IbadaColors.of(context);
-    return Material(
-      color: colors.surface,
-      clipBehavior: Clip.antiAlias,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-        side: BorderSide(color: colors.line),
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: colors.surface,
+        border: Border(top: BorderSide(color: colors.line)),
       ),
-      child: child,
+      child: Center(
+        heightFactor: 1,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 640),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 10),
+            child: child,
+          ),
+        ),
+      ),
     );
   }
 }

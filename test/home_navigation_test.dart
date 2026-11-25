@@ -51,4 +51,37 @@ void main() {
     expect(find.byType(TasbeehScreen), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('wide layout keeps navigation and the counter reachable', (
+    tester,
+  ) async {
+    final previous = SharedPreferencesAsyncPlatform.instance;
+    SharedPreferencesAsyncPlatform.instance =
+        InMemorySharedPreferencesAsync.empty();
+    addTearDown(() => SharedPreferencesAsyncPlatform.instance = previous);
+
+    tester.view
+      ..physicalSize = const Size(812, 360)
+      ..devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    tester.platformDispatcher.textScaleFactorTestValue = 2;
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+
+    await tester.pumpWidget(
+      IbadaApp(data: _LocalData(), settings: PrayerSettings.defaults),
+    );
+    await tester.pumpAndSettle();
+
+    final rail = find.byType(NavigationRail);
+    expect(rail, findsOneWidget);
+    await tester.tap(find.descendant(of: rail, matching: find.text('السبحة')));
+    await tester.pumpAndSettle();
+    final count = find.text('اضغط للتسبيح');
+    expect(count.hitTestable(), findsOneWidget);
+    await tester.tap(count);
+    await tester.pumpAndSettle();
+    expect(find.text('١ من ٣٣').hitTestable(), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
 }

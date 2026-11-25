@@ -115,114 +115,54 @@ class TodayScreen extends StatelessWidget {
     return _Page(
       children: [
         Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(14),
-              child: Image.asset(
-                'assets/materials/ibada-icon.png',
-                width: 42,
-                height: 42,
-                excludeFromSemantics: true,
-              ),
-            ),
-            const SizedBox(width: 9),
             Expanded(
-              child: Text(
-                'عبادة',
-                style: TextStyle(
-                  color: colors.ink,
-                  fontSize: 25,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
+              child: IbadaHeading('مواقيت الصلاة', subtitle: _dateText(today)),
             ),
-            IconButton(
+            const SizedBox(width: 8),
+            IconButton.filledTonal(
               tooltip: 'إعدادات التنبيهات',
-              style: IconButton.styleFrom(
-                backgroundColor: colors.surface,
-                foregroundColor: colors.ink,
-                side: BorderSide(color: colors.line),
-              ),
               onPressed: onAlerts,
-              icon: const Icon(Icons.notifications_none_rounded, size: 21),
+              icon: const Icon(Icons.notifications_none_rounded),
             ),
           ],
         ),
-        const SizedBox(height: 24),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
+        const SizedBox(height: 10),
+        Wrap(
+          spacing: 8,
+          runSpacing: 4,
           children: [
-            Expanded(
-              flex: 3,
-              child: Column(
+            FilledButton.tonalIcon(
+              onPressed: onLocation,
+              icon: Icon(
+                settings.place.usesGps
+                    ? Icons.my_location_rounded
+                    : Icons.place_outlined,
+                size: 19,
+              ),
+              label: Column(
+                mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'مواقيت الصلاة',
-                    style: TextStyle(
-                      color: colors.ink,
-                      fontSize: 26,
-                      fontWeight: FontWeight.w700,
-                      height: 1.4,
+                  Text(settings.place.name),
+                  if (!settings.confirmedPlace)
+                    const Text(
+                      'اختر موقعك لحساب مواقيتك',
+                      style: TextStyle(fontSize: 12),
                     ),
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    _dateText(today),
-                    style: TextStyle(color: colors.muted, fontSize: 13),
-                  ),
                 ],
               ),
             ),
-            const SizedBox(width: 8),
-            Flexible(
-              flex: 2,
-              child: Align(
-                alignment: AlignmentDirectional.centerEnd,
-                child: OutlinedButton.icon(
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: colors.accent,
-                    backgroundColor: colors.surface,
-                    side: BorderSide(color: colors.line),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 11,
-                      vertical: 10,
-                    ),
-                    textStyle: TextStyle(
-                      fontSize: 12,
-                      fontFamily: Theme.of(
-                        context,
-                      ).textTheme.labelLarge?.fontFamily,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  onPressed: onLocation,
-                  icon: Icon(
-                    settings.place.usesGps
-                        ? Icons.my_location_rounded
-                        : Icons.place_outlined,
-                    size: 16,
-                  ),
-                  label: Text(
-                    settings.place.name,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
+            if (onWeek != null)
+              TextButton.icon(
+                onPressed: onWeek,
+                icon: const Icon(Icons.calendar_month_outlined, size: 19),
+                label: const Text('جدول الأسبوع'),
               ),
-            ),
           ],
         ),
-        if (!settings.confirmedPlace)
-          Align(
-            alignment: AlignmentDirectional.centerStart,
-            child: TextButton.icon(
-              onPressed: onLocation,
-              icon: const Icon(Icons.my_location_rounded, size: 17),
-              label: const Text('اختر موقعك لحساب مواقيتك'),
-            ),
-          ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 15),
         ValueListenableBuilder(
           valueListenable: clock,
           builder: (context, now, _) {
@@ -235,55 +175,54 @@ class TodayScreen extends StatelessWidget {
             );
           },
         ),
-        if (onWeek != null || onExactAlarm != null) ...[
-          const SizedBox(height: 10),
-          Wrap(
-            spacing: 8,
-            runSpacing: 4,
-            children: [
-              if (onWeek != null)
-                FilledButton.tonalIcon(
-                  onPressed: onWeek,
-                  icon: const Icon(Icons.calendar_month_outlined, size: 20),
-                  label: const Text('جدول الأسبوع'),
-                ),
-              if (onExactAlarm != null)
-                TextButton.icon(
-                  onPressed: onExactAlarm,
-                  icon: const Icon(Icons.alarm_add_outlined, size: 20),
-                  label: const Text('فعّل المنبّه الدقيق'),
-                ),
-            ],
+        if (onExactAlarm != null)
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: TextButton.icon(
+              onPressed: onExactAlarm,
+              icon: const Icon(Icons.alarm_add_outlined, size: 20),
+              label: const Text('فعّل المنبّه الدقيق'),
+            ),
           ),
-        ],
         const SizedBox(height: 20),
+        IbadaHeading(
+          offset == 0 ? 'صلوات اليوم' : _dateText(day.day),
+          compact: true,
+        ),
+        const SizedBox(height: 8),
         Row(
           children: [
-            Expanded(
-              child: Text(
-                offset == 0 ? 'صلوات اليوم' : _dateText(day.day),
-                style: TextStyle(
-                  color: colors.ink,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-            if (offset != 0)
-              TextButton(onPressed: () => onDay(0), child: const Text('اليوم')),
-            IconButton(
+            IconButton.filledTonal(
               tooltip: 'اليوم السابق',
               onPressed: () => onDay(offset - 1),
               icon: const Icon(Icons.chevron_right_rounded),
             ),
-            IconButton(
+            const SizedBox(width: 8),
+            Expanded(
+              child: offset == 0
+                  ? Center(
+                      child: Text(
+                        'اليوم',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: colors.muted, fontSize: 13),
+                      ),
+                    )
+                  : Center(
+                      child: TextButton(
+                        onPressed: () => onDay(0),
+                        child: const Text('العودة لليوم'),
+                      ),
+                    ),
+            ),
+            const SizedBox(width: 8),
+            IconButton.filledTonal(
               tooltip: 'اليوم التالي',
               onPressed: () => onDay(offset + 1),
               icon: const Icon(Icons.chevron_left_rounded),
             ),
           ],
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: 8),
         ValueListenableBuilder(
           valueListenable: clock,
           builder: (context, now, _) {
@@ -328,16 +267,9 @@ class _NextCard extends StatelessWidget {
     final seconds = math.max(0, (remaining.inMilliseconds / 1000).ceil());
     final timer =
         '${_pair(seconds ~/ 3600)}:${_pair((seconds ~/ 60) % 60)}:${_pair(seconds % 60)}';
-    return Container(
-      decoration: BoxDecoration(
-        color: IbadaColors.pine,
-        borderRadius: BorderRadius.circular(28),
-        gradient: const LinearGradient(
-          begin: Alignment.topRight,
-          end: Alignment.bottomLeft,
-          colors: [Color(0xFF25463A), Color(0xFF142C25), Color(0xFF101F1B)],
-        ),
-      ),
+    return Material(
+      color: IbadaColors.pine,
+      borderRadius: BorderRadius.circular(28),
       clipBehavior: Clip.antiAlias,
       child: Stack(
         children: [
@@ -345,104 +277,81 @@ class _NextCard extends StatelessWidget {
             child: Image.asset(
               'assets/materials/prayer-horizon.webp',
               fit: BoxFit.cover,
-              alignment: Alignment.bottomLeft,
-              color: const Color(0x9910231C),
+              alignment: Alignment.centerLeft,
+              color: IbadaColors.horizonShade,
               colorBlendMode: BlendMode.srcOver,
               excludeFromSemantics: true,
             ),
           ),
-          Positioned.fill(
-            child: ExcludeSemantics(
-              child: CustomPaint(painter: _SolarArc(progress)),
-            ),
-          ),
           Padding(
-            padding: const EdgeInsetsDirectional.fromSTEB(23, 20, 23, 20),
+            padding: const EdgeInsets.all(20),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                const Text(
+                  'الصلاة القادمة',
+                  style: TextStyle(
+                    color: IbadaColors.pale,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 4,
+                  alignment: WrapAlignment.spaceBetween,
+                  crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'الصلاة القادمة',
-                            style: TextStyle(
-                              color: IbadaColors.pale,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            next.prayer.label,
-                            style: const TextStyle(
-                              color: IbadaColors.cream,
-                              fontSize: 35,
-                              fontWeight: FontWeight.w700,
-                              height: 1.2,
-                            ),
-                          ),
-                        ],
+                    Text(
+                      next.prayer.label,
+                      style: const TextStyle(
+                        color: IbadaColors.cream,
+                        fontSize: 36,
+                        fontWeight: FontWeight.w700,
+                        height: 1.22,
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    Flexible(
-                      child: Align(
-                        alignment: AlignmentDirectional.centerEnd,
-                        child: DecoratedBox(
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF385046),
-                            border: Border.all(color: const Color(0xFF58695A)),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 7,
-                            ),
-                            child: TimeLabel(
-                              next.time,
-                              use24Hour: use24Hour,
-                              color: IbadaColors.cream,
-                              size: 14,
-                            ),
-                          ),
-                        ),
-                      ),
+                    TimeLabel(
+                      next.time,
+                      use24Hour: use24Hour,
+                      color: IbadaColors.cream,
+                      size: 19,
                     ),
                   ],
                 ),
-                const SizedBox(height: 28),
+                const SizedBox(height: 14),
                 const Text(
                   'الوقت المتبقي',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: IbadaColors.pale,
-                    fontWeight: FontWeight.w400,
-                  ),
+                  style: TextStyle(color: IbadaColors.pale, fontSize: 13),
                 ),
-                const SizedBox(height: 2),
                 Semantics(
                   label:
-                      '${seconds ~/ 3600} ساعة و${(seconds ~/ 60) % 60} دقيقة متبقية',
+                      '${arabicDigits(seconds ~/ 3600)} ساعة و'
+                      '${arabicDigits((seconds ~/ 60) % 60)} دقيقة',
                   excludeSemantics: true,
                   child: Text(
                     timer,
                     textDirection: TextDirection.ltr,
+                    textAlign: TextAlign.right,
                     style: const TextStyle(
                       color: IbadaColors.amber,
-                      fontSize: 32,
-                      fontWeight: FontWeight.w500,
+                      fontSize: 28,
+                      fontWeight: FontWeight.w700,
                       fontFeatures: _numbers,
-                      height: 1.2,
+                      height: 1.3,
                     ),
                   ),
                 ),
-                const SizedBox(height: 45),
+                const SizedBox(height: 14),
+                ExcludeSemantics(
+                  child: LinearProgressIndicator(
+                    value: progress,
+                    minHeight: 4,
+                    borderRadius: BorderRadius.circular(8),
+                    color: IbadaColors.amber,
+                    backgroundColor: IbadaColors.pale.withValues(alpha: .28),
+                  ),
+                ),
               ],
             ),
           ),
@@ -452,69 +361,6 @@ class _NextCard extends StatelessWidget {
   }
 }
 
-class _SolarArc extends CustomPainter {
-  const _SolarArc(this.progress);
-  final double progress;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final horizon = size.height - 18;
-    Offset point(double t) => Offset(
-      size.width * (.94 - t * .88),
-      horizon - math.sin(t * math.pi) * math.min(40, size.height * .22),
-    );
-    final arc = Path();
-    final complete = Path();
-    for (var i = 0; i <= 100; i++) {
-      final t = i / 100;
-      final p = point(t);
-      if (i == 0) {
-        arc.moveTo(p.dx, p.dy);
-        complete.moveTo(p.dx, p.dy);
-      } else {
-        arc.lineTo(p.dx, p.dy);
-        if (t <= progress) complete.lineTo(p.dx, p.dy);
-      }
-    }
-    canvas.drawPath(
-      arc,
-      Paint()
-        ..color = const Color(0xFF526357)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1,
-    );
-    canvas.drawPath(
-      complete,
-      Paint()
-        ..color = const Color(0xFFAF9366)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.15,
-    );
-    canvas.drawLine(
-      Offset(size.width * .05, horizon),
-      Offset(size.width * .95, horizon),
-      Paint()..color = const Color(0xFF43574D),
-    );
-    for (final t in [0.0, .25, .5, .75, 1.0]) {
-      canvas.drawCircle(point(t), 2, Paint()..color = const Color(0xFF859589));
-    }
-    final sun = point(progress);
-    canvas.drawCircle(
-      sun,
-      18,
-      Paint()
-        ..shader = const RadialGradient(
-          colors: [Color(0x55F4CF90), Color(0x00F4CF90)],
-        ).createShader(Rect.fromCircle(center: sun, radius: 18)),
-    );
-    canvas.drawCircle(sun, 4.5, Paint()..color = IbadaColors.amber);
-  }
-
-  @override
-  bool shouldRepaint(covariant _SolarArc oldDelegate) =>
-      progress != oldDelegate.progress;
-}
-
 class _Panel extends StatelessWidget {
   const _Panel({required this.children});
   final List<Widget> children;
@@ -522,19 +368,13 @@ class _Panel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = IbadaColors.of(context);
-    return Material(
-      color: colors.surface,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(22),
-        side: BorderSide(color: colors.line),
-      ),
-      clipBehavior: Clip.antiAlias,
+    return IbadaSurface(
       child: Column(
         children: [
           for (var i = 0; i < children.length; i++) ...[
             if (i != 0)
               Divider(height: 1, indent: 13, endIndent: 13, color: colors.line),
-            children[i],
+            Semantics(container: true, child: children[i]),
           ],
         ],
       ),
@@ -565,11 +405,11 @@ class _PrayerRow extends StatelessWidget {
       leading: ExcludeSemantics(
         child: DecoratedBox(
           decoration: BoxDecoration(
-            color: isNext ? colors.surface : colors.paper,
-            borderRadius: BorderRadius.circular(9),
+            color: isNext ? colors.surface : colors.tint,
+            borderRadius: BorderRadius.circular(13),
           ),
           child: Padding(
-            padding: const EdgeInsets.all(6),
+            padding: const EdgeInsets.all(8),
             child: Icon(
               _prayerIcons[event.prayer.index],
               color: colors.accent,
@@ -589,7 +429,7 @@ class _PrayerRow extends StatelessWidget {
       subtitle: isNext
           ? Text(
               'القادمة',
-              style: TextStyle(color: colors.tintInk, fontSize: 10),
+              style: TextStyle(color: colors.tintInk, fontSize: 12),
             )
           : null,
       trailing: Row(
@@ -610,7 +450,7 @@ class _PrayerRow extends StatelessWidget {
             event.time,
             use24Hour: use24Hour,
             color: colors.ink,
-            size: 15,
+            size: 16,
           ),
         ],
       ),
@@ -647,7 +487,7 @@ class WeekScreen extends StatelessWidget {
     final colors = IbadaColors.of(context);
     return _Page(
       children: [
-        _Heading('جدول الصلاة', calculator.settings.place.name),
+        IbadaHeading(calculator.settings.place.name, compact: true),
         const SizedBox(height: 20),
         for (var i = 0; i < 7; i++) ...[
           _Panel(
@@ -674,7 +514,7 @@ class WeekScreen extends StatelessWidget {
                         MediaQuery.textScalerOf(context).scale(14) / 14;
                     final columns = (constraints.maxWidth / (92 * scale))
                         .floor()
-                        .clamp(1, 3);
+                        .clamp(1, 6);
                     final width = constraints.maxWidth / columns;
                     return Column(
                       children: [
@@ -719,32 +559,6 @@ class WeekScreen extends StatelessWidget {
   }
 }
 
-class _Heading extends StatelessWidget {
-  const _Heading(this.title, this.subtitle);
-  final String title, subtitle;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = IbadaColors.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const SizedBox(height: 7),
-        Text(
-          title,
-          style: TextStyle(
-            fontWeight: FontWeight.w700,
-            fontSize: 26,
-            color: colors.ink,
-          ),
-        ),
-        const SizedBox(height: 6),
-        Text(subtitle, style: TextStyle(color: colors.muted, fontSize: 13)),
-      ],
-    );
-  }
-}
-
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({
     super.key,
@@ -778,12 +592,16 @@ class SettingsScreen extends StatelessWidget {
     final alertMedia = media;
     return _Page(
       children: [
-        const _Heading('الإعدادات', 'الموقع، طريقة الحساب والتنبيهات'),
+        const IbadaHeading(
+          'الإعدادات',
+          subtitle: 'التنبيهات والمواقيت والمظهر',
+        ),
         const SizedBox(height: 21),
         const _SectionLabel('التنبيهات'),
         _Panel(
           children: [
             SwitchListTile(
+              secondary: const Icon(Icons.notifications_active_outlined),
               title: const Text('تنبيهات الصلاة'),
               subtitle: const Text('صوت وإشعار في موعد الصلاة'),
               value: settings.alarms,
@@ -791,6 +609,7 @@ class SettingsScreen extends StatelessWidget {
             ),
             if (Theme.of(context).platform == TargetPlatform.android)
               SwitchListTile(
+                secondary: const Icon(Icons.lock_outline_rounded),
                 title: const Text('ملء الشاشة عند قفل الهاتف'),
                 subtitle: const Text('يتطلب إذنًا من النظام'),
                 value: settings.fullScreen,
@@ -890,7 +709,7 @@ class SettingsScreen extends StatelessWidget {
         const SizedBox(height: 9),
         Text(
           'تقدر تغيّر تنبيه كل صلاة وتضبط دقائقها بالضغط عليها في شاشة اليوم.',
-          style: TextStyle(fontSize: 11, color: colors.muted, height: 1.7),
+          style: TextStyle(fontSize: 13, color: colors.muted, height: 1.55),
         ),
         const SizedBox(height: 19),
         const _SectionLabel('المواقيت'),
@@ -937,11 +756,11 @@ class SettingsScreen extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 19),
-        const _SectionLabel('العرض'),
+        const _SectionLabel('المظهر'),
         _Panel(
           children: [
             _ChoiceTile(
-              title: 'المظهر',
+              title: 'الوضع الفاتح والداكن',
               description: _appearanceLabel(settings.appearance),
               icon: Icons.brightness_6_outlined,
               values: const ['system', 'light', 'dark'],
@@ -950,6 +769,7 @@ class SettingsScreen extends StatelessWidget {
               onSelect: (mode) => onChange(settings.copyWith(appearance: mode)),
             ),
             SwitchListTile(
+              secondary: const Icon(Icons.schedule_rounded),
               title: const Text('نظام ٢٤ ساعة'),
               value: settings.use24Hour,
               onChanged: (value) =>
@@ -981,12 +801,15 @@ class _SectionLabel extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Padding(
     padding: const EdgeInsetsDirectional.only(start: 3, bottom: 8),
-    child: Text(
-      label,
-      style: TextStyle(
-        color: IbadaColors.of(context).accent,
-        fontSize: 14,
-        fontWeight: FontWeight.w700,
+    child: Semantics(
+      header: true,
+      child: Text(
+        label,
+        style: TextStyle(
+          color: IbadaColors.of(context).accent,
+          fontSize: 16,
+          fontWeight: FontWeight.w700,
+        ),
       ),
     ),
   );
@@ -1094,7 +917,7 @@ Future<void> showPrayerOptions(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _Heading(prayer.label, 'تعديل الموعد بالدقائق'),
+              IbadaHeading(prayer.label, subtitle: 'تعديل الموعد بالدقائق'),
               const SizedBox(height: 10),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -1227,27 +1050,6 @@ class _LocationScreenState extends State<LocationScreen> {
       body: SafeArea(
         child: _Page(
           children: [
-            FilledButton.tonalIcon(
-              onPressed: _locating ? null : _locate,
-              icon: const Icon(Icons.my_location_rounded, size: 19),
-              label: Text(
-                _locating ? 'جاري تحديد موقعك…' : 'استخدم موقعي الحالي',
-              ),
-            ),
-            if (_locating)
-              const Padding(
-                padding: EdgeInsets.only(top: 8),
-                child: LinearProgressIndicator(),
-              ),
-            if (_error != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 8),
-                child: Text(
-                  _error!,
-                  style: TextStyle(color: Theme.of(context).colorScheme.error),
-                ),
-              ),
-            const SizedBox(height: 16),
             TextField(
               decoration: const InputDecoration(
                 labelText: 'ابحث عن مدينة',
@@ -1257,7 +1059,46 @@ class _LocationScreenState extends State<LocationScreen> {
               textInputAction: TextInputAction.search,
               onChanged: (text) => setState(() => _query = searchKey(text)),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 8,
+              runSpacing: 4,
+              children: [
+                FilledButton.tonalIcon(
+                  onPressed: _locating ? null : _locate,
+                  icon: const Icon(Icons.my_location_rounded, size: 19),
+                  label: Text(
+                    _locating ? 'جارٍ تحديد الموقع…' : 'استخدم موقعي الحالي',
+                  ),
+                ),
+                TextButton.icon(
+                  onPressed: _locating ? null : _manual,
+                  icon: const Icon(Icons.pin_drop_outlined),
+                  label: const Text('إدخال الإحداثيات يدويًا'),
+                ),
+              ],
+            ),
+            if (_locating)
+              const Padding(
+                padding: EdgeInsets.only(top: 8),
+                child: LinearProgressIndicator(
+                  semanticsLabel: 'جارٍ تحديد الموقع',
+                ),
+              ),
+            if (_error case final String error)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Semantics(
+                  liveRegion: true,
+                  child: Text(
+                    error,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                  ),
+                ),
+              ),
+            const SizedBox(height: 16),
             _SectionLabel(_query.isEmpty ? 'مدن مقترحة' : 'نتائج البحث'),
             FutureBuilder(
               future: _cities,
@@ -1329,12 +1170,6 @@ class _LocationScreenState extends State<LocationScreen> {
                   ],
                 );
               },
-            ),
-            const SizedBox(height: 12),
-            TextButton.icon(
-              onPressed: _locating ? null : _manual,
-              icon: const Icon(Icons.pin_drop_outlined),
-              label: const Text('إدخال الإحداثيات يدويًا'),
             ),
           ],
         ),

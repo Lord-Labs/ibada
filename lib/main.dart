@@ -81,7 +81,17 @@ class _Home extends StatefulWidget {
   State<_Home> createState() => _HomeState();
 }
 
-enum _Tab { today, adhkar, tasbeeh, settings }
+enum _Tab {
+  today('اليوم', Icons.wb_twilight_outlined, Icons.wb_twilight_rounded),
+  adhkar('الأذكار', Icons.auto_stories_outlined, Icons.auto_stories_rounded),
+  tasbeeh('السبحة', Icons.blur_circular_outlined, Icons.blur_circular_rounded),
+  settings('الإعدادات', Icons.settings_outlined, Icons.settings_rounded);
+
+  const _Tab(this.label, this.icon, this.selectedIcon);
+
+  final String label;
+  final IconData icon, selectedIcon;
+}
 
 typedef _MediaChoice = ({
   String label,
@@ -262,7 +272,7 @@ class _HomeState extends State<_Home> with WidgetsBindingObserver {
     final day = await Navigator.of(context).push<DateTime>(
       MaterialPageRoute(
         builder: (context) => Scaffold(
-          appBar: AppBar(),
+          appBar: AppBar(title: const Text('جدول الأسبوع')),
           body: SafeArea(
             top: false,
             child: WeekScreen(
@@ -466,89 +476,107 @@ class _HomeState extends State<_Home> with WidgetsBindingObserver {
     final style = Theme.of(context).brightness == Brightness.dark
         ? SystemUiOverlayStyle.light
         : SystemUiOverlayStyle.dark;
+    final screen = switch (_tab) {
+      _Tab.adhkar => const AdhkarScreen(),
+      _Tab.tasbeeh => const TasbeehScreen(),
+      _Tab.settings => SettingsScreen(
+        settings: _settings,
+        status: _status,
+        schedulingFailed: _schedulingFailed,
+        onChange: _update,
+        onPlace: _choosePlace,
+        onAlerts: _setAlerts,
+        onPermission: _request,
+        onTest: _testAlert,
+        media: _media,
+        mediaBusy: _mediaBusy,
+        onSound: () => _chooseAlertMedia(image: false),
+        onImage: () => _chooseAlertMedia(image: true),
+      ),
+      _Tab.today => TodayScreen(
+        calculator: _calculator,
+        today: _date,
+        offset: _dayOffset,
+        clock: _clock,
+        onLocation: _choosePlace,
+        onAlerts: () => _selectTab(_Tab.settings),
+        onWeek: _openWeek,
+        onExactAlarm:
+            Theme.of(context).platform == TargetPlatform.android &&
+                _settings.alarms &&
+                _status.supported &&
+                _status.notifications &&
+                !_status.exact
+            ? () => _request('exact')
+            : null,
+        onDay: (offset) => setState(() => _dayOffset = offset),
+        onPrayer: (prayer) =>
+            showPrayerOptions(context, _settings, prayer, _update),
+      ),
+    };
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: style,
       child: ScaffoldMessenger(
         key: _messages,
-        child: Scaffold(
-          body: SafeArea(
-            bottom: false,
-            child: switch (_tab) {
-              _Tab.adhkar => const AdhkarScreen(),
-              _Tab.tasbeeh => const TasbeehScreen(),
-              _Tab.settings => SettingsScreen(
-                settings: _settings,
-                status: _status,
-                schedulingFailed: _schedulingFailed,
-                onChange: _update,
-                onPlace: _choosePlace,
-                onAlerts: _setAlerts,
-                onPermission: _request,
-                onTest: _testAlert,
-                media: _media,
-                mediaBusy: _mediaBusy,
-                onSound: () => _chooseAlertMedia(image: false),
-                onImage: () => _chooseAlertMedia(image: true),
-              ),
-              _Tab.today => TodayScreen(
-                calculator: _calculator,
-                today: _date,
-                offset: _dayOffset,
-                clock: _clock,
-                onLocation: _choosePlace,
-                onAlerts: () => _selectTab(_Tab.settings),
-                onWeek: _openWeek,
-                onExactAlarm:
-                    Theme.of(context).platform == TargetPlatform.android &&
-                        _settings.alarms &&
-                        _status.supported &&
-                        _status.notifications &&
-                        !_status.exact
-                    ? () => _request('exact')
-                    : null,
-                onDay: (offset) => setState(() => _dayOffset = offset),
-                onPrayer: (prayer) =>
-                    showPrayerOptions(context, _settings, prayer, _update),
-              ),
-            },
-          ),
-          bottomNavigationBar: DecoratedBox(
-            decoration: BoxDecoration(
-              border: Border(top: BorderSide(color: palette.line)),
-            ),
-            child: Center(
-              heightFactor: 1,
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 680),
-                child: NavigationBar(
-                  selectedIndex: _tab.index,
-                  labelBehavior: MediaQuery.textScalerOf(context).scale(12) > 16
-                      ? NavigationDestinationLabelBehavior.onlyShowSelected
-                      : NavigationDestinationLabelBehavior.alwaysShow,
-                  onDestinationSelected: (index) =>
-                      _selectTab(_Tab.values[index]),
-                  destinations: const [
-                    NavigationDestination(
-                      icon: Icon(Icons.wb_twilight_outlined),
-                      label: 'اليوم',
-                    ),
-                    NavigationDestination(
-                      icon: Icon(Icons.auto_stories_outlined),
-                      label: 'الأذكار',
-                    ),
-                    NavigationDestination(
-                      icon: Icon(Icons.blur_circular_rounded),
-                      label: 'السبحة',
-                    ),
-                    NavigationDestination(
-                      icon: Icon(Icons.tune_rounded),
-                      label: 'الإعدادات',
-                    ),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final wide = constraints.maxWidth >= 760;
+            final largeType = MediaQuery.textScalerOf(context).scale(12) > 16;
+            return Scaffold(
+              body: SafeArea(
+                bottom: wide,
+                child: Row(
+                  children: [
+                    if (wide) ...[
+                      NavigationRail(
+                        selectedIndex: _tab.index,
+                        onDestinationSelected: (index) =>
+                            _selectTab(_Tab.values[index]),
+                        labelType: NavigationRailLabelType.all,
+                        scrollable: true,
+                        destinations: [
+                          for (final tab in _Tab.values)
+                            NavigationRailDestination(
+                              icon: Icon(tab.icon),
+                              selectedIcon: Icon(tab.selectedIcon),
+                              label: Text(tab.label),
+                            ),
+                        ],
+                      ),
+                      VerticalDivider(width: 1, color: palette.line),
+                    ],
+                    Expanded(key: const ValueKey('tab-content'), child: screen),
                   ],
                 ),
               ),
-            ),
-          ),
+              bottomNavigationBar: wide
+                  ? null
+                  : DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: palette.surface,
+                        border: Border(top: BorderSide(color: palette.line)),
+                      ),
+                      child: NavigationBar(
+                        selectedIndex: _tab.index,
+                        height: largeType ? 78 : null,
+                        labelBehavior: largeType
+                            ? NavigationDestinationLabelBehavior
+                                  .onlyShowSelected
+                            : NavigationDestinationLabelBehavior.alwaysShow,
+                        onDestinationSelected: (index) =>
+                            _selectTab(_Tab.values[index]),
+                        destinations: [
+                          for (final tab in _Tab.values)
+                            NavigationDestination(
+                              icon: Icon(tab.icon),
+                              selectedIcon: Icon(tab.selectedIcon),
+                              label: tab.label,
+                            ),
+                        ],
+                      ),
+                    ),
+            );
+          },
         ),
       ),
     );

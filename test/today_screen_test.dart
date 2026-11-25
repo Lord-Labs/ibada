@@ -54,6 +54,9 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
+      await tester.tap(find.text('اختر موقعك لحساب مواقيتك'));
+      expect(requested, isTrue);
+      requested = false;
       await tester.tap(find.text('القاهرة'));
       expect(requested, isTrue);
       await tester.scrollUntilVisible(find.text('جدول الأسبوع'), 120);

@@ -26,6 +26,7 @@ import android.os.Handler
 import android.os.Looper
 import android.view.Gravity
 import android.view.ViewGroup
+import android.view.WindowInsets
 import android.view.WindowManager
 import android.widget.Button
 import android.widget.FrameLayout
@@ -384,47 +385,64 @@ class PrayerAlarmActivity : Activity() {
         val fontPath = "flutter_assets/assets/fonts"
         val regularFont = Typeface.createFromAsset(assets, "$fontPath/thmanyahsans-Regular.otf")
         val boldFont = Typeface.createFromAsset(assets, "$fontPath/thmanyahsans-Bold.otf")
-        val stack = LinearLayout(this).apply {
+        val message = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER
-            layoutDirection = LinearLayout.LAYOUT_DIRECTION_RTL
-            setPadding(px(26), px(60), px(26), px(60))
+            setPadding(px(24), px(24), px(24), px(24))
+            addView(TextView(this@PrayerAlarmActivity).apply {
+                text = "عبادة"
+                textSize = 18f
+                typeface = regularFont
+                setTextColor(amber)
+                gravity = Gravity.CENTER
+            })
+            addView(TextView(this@PrayerAlarmActivity).apply {
+                text = intent.getStringExtra(PrayerAlarm.TITLE) ?: "تنبيه الصلاة"
+                textSize = 36f
+                gravity = Gravity.CENTER
+                setTextColor(cream)
+                typeface = boldFont
+                setPadding(0, px(14), 0, 0)
+                if (Build.VERSION.SDK_INT >= 28) isAccessibilityHeading = true
+            })
         }
-        stack.addView(TextView(this).apply {
-            text = "عبادة"
-            textSize = 18f
-            typeface = regularFont
-            setTextColor(amber)
-            gravity = Gravity.CENTER
-        })
-        stack.addView(TextView(this).apply {
-            text = intent.getStringExtra(PrayerAlarm.TITLE) ?: "تنبيه الصلاة"
-            textSize = 33f
-            gravity = Gravity.CENTER
-            setTextColor(cream)
-            typeface = boldFont
-            setPadding(0, px(22), 0, px(50))
-        })
-        stack.addView(Button(this).apply {
-            text = "إيقاف التنبيه"
-            textSize = 17f
-            typeface = regularFont
-            setTextColor(pine)
-            minHeight = px(56)
-            backgroundTintList = ColorStateList.valueOf(amber)
-            setOnClickListener { dismiss() }
-        }, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
-        val scroll = ScrollView(this).apply {
-            isFillViewport = true
-            addView(stack)
+        val content = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER_HORIZONTAL
+            layoutDirection = LinearLayout.LAYOUT_DIRECTION_RTL
+            addView(ScrollView(this@PrayerAlarmActivity).apply {
+                isFillViewport = true
+                addView(message)
+            }, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f))
+            addView(Button(this@PrayerAlarmActivity).apply {
+                text = "إيقاف التنبيه"
+                textSize = 17f
+                typeface = boldFont
+                setTextColor(pine)
+                minHeight = px(60)
+                backgroundTintList = ColorStateList.valueOf(amber)
+                setOnClickListener { dismiss() }
+            }, LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+            ).apply { setMargins(px(20), 0, px(20), px(12)) })
+            setOnApplyWindowInsetsListener { view, insets ->
+                if (Build.VERSION.SDK_INT >= 30) {
+                    val safe = insets.getInsets(
+                        WindowInsets.Type.systemBars() or WindowInsets.Type.displayCutout()
+                    )
+                    view.setPadding(safe.left, safe.top, safe.right, safe.bottom)
+                }
+                insets
+            }
         }
         setContentView(FrameLayout(this).apply {
             setBackgroundColor(pine)
             PrayerAlertMedia.background(this@PrayerAlarmActivity)?.let { image ->
-                image.setColorFilter(Color.argb(168, 10, 32, 26), android.graphics.PorterDuff.Mode.SRC_ATOP)
+                image.setColorFilter(Color.argb(192, 10, 32, 26), android.graphics.PorterDuff.Mode.SRC_ATOP)
                 addView(image)
             }
-            addView(scroll)
+            addView(content)
         })
     }
 
