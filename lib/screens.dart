@@ -75,9 +75,9 @@ class _Page extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Center(
     child: ConstrainedBox(
-      constraints: const BoxConstraints(maxWidth: 640),
+      constraints: const BoxConstraints(maxWidth: 680),
       child: ListView(
-        padding: const EdgeInsetsDirectional.fromSTEB(20, 12, 20, 24),
+        padding: const EdgeInsetsDirectional.fromSTEB(20, 16, 20, 32),
         children: children,
       ),
     ),
@@ -94,6 +94,7 @@ class TodayScreen extends StatelessWidget {
     required this.onLocation,
     required this.onAlerts,
     this.onExactAlarm,
+    this.onWeek,
     required this.onDay,
     required this.onPrayer,
   });
@@ -102,7 +103,7 @@ class TodayScreen extends StatelessWidget {
   final int offset;
   final ValueNotifier<DateTime> clock;
   final VoidCallback onLocation, onAlerts;
-  final VoidCallback? onExactAlarm;
+  final VoidCallback? onExactAlarm, onWeek;
   final ValueChanged<int> onDay;
   final ValueChanged<Prayer> onPrayer;
 
@@ -116,11 +117,11 @@ class TodayScreen extends StatelessWidget {
         Row(
           children: [
             ClipRRect(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(14),
               child: Image.asset(
                 'assets/materials/ibada-icon.png',
-                width: 40,
-                height: 40,
+                width: 42,
+                height: 42,
                 excludeFromSemantics: true,
               ),
             ),
@@ -147,7 +148,7 @@ class TodayScreen extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 21),
+        const SizedBox(height: 24),
         Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
@@ -160,7 +161,7 @@ class TodayScreen extends StatelessWidget {
                     'مواقيت الصلاة',
                     style: TextStyle(
                       color: colors.ink,
-                      fontSize: 24,
+                      fontSize: 26,
                       fontWeight: FontWeight.w700,
                       height: 1.4,
                     ),
@@ -168,7 +169,7 @@ class TodayScreen extends StatelessWidget {
                   const SizedBox(height: 3),
                   Text(
                     _dateText(today),
-                    style: TextStyle(color: colors.muted, fontSize: 12),
+                    style: TextStyle(color: colors.muted, fontSize: 13),
                   ),
                 ],
               ),
@@ -221,7 +222,7 @@ class TodayScreen extends StatelessWidget {
               label: const Text('اختر موقعك لحساب مواقيتك'),
             ),
           ),
-        const SizedBox(height: 17),
+        const SizedBox(height: 20),
         ValueListenableBuilder(
           valueListenable: clock,
           builder: (context, now, _) {
@@ -234,16 +235,28 @@ class TodayScreen extends StatelessWidget {
             );
           },
         ),
-        if (onExactAlarm != null)
-          Align(
-            alignment: AlignmentDirectional.centerStart,
-            child: TextButton.icon(
-              onPressed: onExactAlarm,
-              icon: const Icon(Icons.alarm_add_outlined, size: 18),
-              label: const Text('فعّل المنبّه الدقيق'),
-            ),
+        if (onWeek != null || onExactAlarm != null) ...[
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 4,
+            children: [
+              if (onWeek != null)
+                FilledButton.tonalIcon(
+                  onPressed: onWeek,
+                  icon: const Icon(Icons.calendar_month_outlined, size: 20),
+                  label: const Text('جدول الأسبوع'),
+                ),
+              if (onExactAlarm != null)
+                TextButton.icon(
+                  onPressed: onExactAlarm,
+                  icon: const Icon(Icons.alarm_add_outlined, size: 20),
+                  label: const Text('فعّل المنبّه الدقيق'),
+                ),
+            ],
           ),
-        const SizedBox(height: 19),
+        ],
+        const SizedBox(height: 20),
         Row(
           children: [
             Expanded(
@@ -251,7 +264,7 @@ class TodayScreen extends StatelessWidget {
                 offset == 0 ? 'صلوات اليوم' : _dateText(day.day),
                 style: TextStyle(
                   color: colors.ink,
-                  fontSize: 17,
+                  fontSize: 18,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -318,7 +331,7 @@ class _NextCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: IbadaColors.pine,
-        borderRadius: BorderRadius.circular(25),
+        borderRadius: BorderRadius.circular(28),
         gradient: const LinearGradient(
           begin: Alignment.topRight,
           end: Alignment.bottomLeft,
@@ -512,7 +525,7 @@ class _Panel extends StatelessWidget {
     return Material(
       color: colors.surface,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(19),
+        borderRadius: BorderRadius.circular(22),
         side: BorderSide(color: colors.line),
       ),
       clipBehavior: Clip.antiAlias,
@@ -547,8 +560,8 @@ class _PrayerRow extends StatelessWidget {
     return ListTile(
       tileColor: isNext ? colors.tint : null,
       onTap: onTap,
-      minTileHeight: 52,
-      contentPadding: const EdgeInsetsDirectional.fromSTEB(13, 3, 15, 3),
+      minTileHeight: 56,
+      contentPadding: const EdgeInsetsDirectional.fromSTEB(14, 4, 16, 4),
       leading: ExcludeSemantics(
         child: DecoratedBox(
           decoration: BoxDecoration(
@@ -568,7 +581,7 @@ class _PrayerRow extends StatelessWidget {
       title: Text(
         event.prayer.label,
         style: TextStyle(
-          fontSize: 14,
+          fontSize: 15,
           fontWeight: isNext ? FontWeight.w700 : FontWeight.w500,
           color: colors.ink,
         ),
@@ -743,6 +756,10 @@ class SettingsScreen extends StatelessWidget {
     required this.onAlerts,
     required this.onPermission,
     required this.onTest,
+    this.media,
+    this.mediaBusy = false,
+    this.onSound,
+    this.onImage,
   });
   final PrayerSettings settings;
   final AlarmStatus status;
@@ -751,58 +768,18 @@ class SettingsScreen extends StatelessWidget {
   final VoidCallback onPlace, onTest;
   final ValueChanged<bool> onAlerts;
   final ValueChanged<String> onPermission;
+  final AlarmMedia? media;
+  final bool mediaBusy;
+  final VoidCallback? onSound, onImage;
 
   @override
   Widget build(BuildContext context) {
     final colors = IbadaColors.of(context);
+    final alertMedia = media;
     return _Page(
       children: [
         const _Heading('الإعدادات', 'الموقع، طريقة الحساب والتنبيهات'),
         const SizedBox(height: 21),
-        const _SectionLabel('المواقيت'),
-        _Panel(
-          children: [
-            ListTile(
-              leading: const Icon(Icons.place_outlined),
-              title: const Text('الموقع'),
-              subtitle: Text(settings.place.name),
-              trailing: const Icon(Icons.chevron_left_rounded),
-              onTap: onPlace,
-            ),
-            _ChoiceTile(
-              title: 'طريقة الحساب',
-              description: settings.resolvedMethod.label,
-              icon: Icons.calculate_outlined,
-              values: PrayerMethod.values,
-              current: settings.method,
-              label: (method) => method.label,
-              onSelect: (method) => onChange(settings.copyWith(method: method)),
-            ),
-            _ChoiceTile(
-              title: 'حساب العصر',
-              description: settings.hanafi
-                  ? 'الحنفي'
-                  : 'الشافعي والمالكي والحنبلي',
-              icon: Icons.light_mode_outlined,
-              values: const [false, true],
-              current: settings.hanafi,
-              label: (hanafi) =>
-                  hanafi ? 'الحنفي' : 'الشافعي والمالكي والحنبلي',
-              onSelect: (hanafi) => onChange(settings.copyWith(hanafi: hanafi)),
-            ),
-            _ChoiceTile(
-              title: 'خطوط العرض العليا',
-              description: settings.latitudeRule.label,
-              icon: Icons.public_outlined,
-              values: LatitudeRule.values,
-              current: settings.latitudeRule,
-              label: (rule) => rule.label,
-              onSelect: (rule) =>
-                  onChange(settings.copyWith(latitudeRule: rule)),
-            ),
-          ],
-        ),
-        const SizedBox(height: 19),
         const _SectionLabel('التنبيهات'),
         _Panel(
           children: [
@@ -869,10 +846,95 @@ class SettingsScreen extends StatelessWidget {
               'تعذّرت جدولة التنبيهات. راجع أذونات النظام وافتح التطبيق مرة أخرى.',
             ),
           ),
+        if (alertMedia != null) ...[
+          const SizedBox(height: 20),
+          const _SectionLabel('تخصيص التنبيه'),
+          _Panel(
+            children: [
+              ListTile(
+                leading: const Icon(Icons.music_note_outlined),
+                title: const Text('نغمة التنبيه'),
+                subtitle: Text(
+                  alertMedia.sound ??
+                      (alertMedia.systemSounds ? 'نغمة عبادة' : 'نغمة النظام'),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                trailing: const Icon(Icons.chevron_left_rounded),
+                onTap: mediaBusy ? null : onSound,
+              ),
+              if (alertMedia.imageSupported)
+                ListTile(
+                  leading: const Icon(Icons.wallpaper_outlined),
+                  title: Text(
+                    alertMedia.imageScope == 'notification'
+                        ? 'صورة الإشعار الموسّع'
+                        : 'خلفية شاشة التنبيه',
+                  ),
+                  subtitle: Text(
+                    alertMedia.image ?? 'الخلفية الافتراضية',
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  trailing: const Icon(Icons.chevron_left_rounded),
+                  onTap: mediaBusy ? null : onImage,
+                ),
+            ],
+          ),
+          if (mediaBusy)
+            const Padding(
+              padding: EdgeInsets.only(top: 8),
+              child: LinearProgressIndicator(),
+            ),
+        ],
         const SizedBox(height: 9),
         Text(
           'تقدر تغيّر تنبيه كل صلاة وتضبط دقائقها بالضغط عليها في شاشة اليوم.',
           style: TextStyle(fontSize: 11, color: colors.muted, height: 1.7),
+        ),
+        const SizedBox(height: 19),
+        const _SectionLabel('المواقيت'),
+        _Panel(
+          children: [
+            ListTile(
+              leading: const Icon(Icons.place_outlined),
+              title: const Text('الموقع'),
+              subtitle: Text(settings.place.name),
+              trailing: const Icon(Icons.chevron_left_rounded),
+              onTap: onPlace,
+            ),
+            _ChoiceTile(
+              title: 'طريقة الحساب',
+              description: settings.resolvedMethod.label,
+              icon: Icons.calculate_outlined,
+              values: PrayerMethod.values,
+              current: settings.method,
+              label: (method) => method.label,
+              onSelect: (method) => onChange(settings.copyWith(method: method)),
+            ),
+            _ChoiceTile(
+              title: 'حساب العصر',
+              description: settings.hanafi
+                  ? 'الحنفي'
+                  : 'الشافعي والمالكي والحنبلي',
+              icon: Icons.light_mode_outlined,
+              values: const [false, true],
+              current: settings.hanafi,
+              label: (hanafi) =>
+                  hanafi ? 'الحنفي' : 'الشافعي والمالكي والحنبلي',
+              onSelect: (hanafi) => onChange(settings.copyWith(hanafi: hanafi)),
+            ),
+            _ChoiceTile(
+              title: 'خطوط العرض العليا',
+              description: settings.latitudeRule.label,
+              icon: Icons.public_outlined,
+              values: LatitudeRule.values,
+              current: settings.latitudeRule,
+              label: (rule) => rule.label,
+              onSelect: (rule) =>
+                  onChange(settings.copyWith(latitudeRule: rule)),
+            ),
+          ],
         ),
         const SizedBox(height: 19),
         const _SectionLabel('العرض'),

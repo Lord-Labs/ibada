@@ -5,6 +5,7 @@ import 'package:material_ui/material_ui.dart';
 
 import 'alarms.dart';
 import 'app_theme.dart';
+import 'devotion.dart';
 import 'local_data.dart';
 import 'prayer_times.dart';
 import 'screens.dart';
@@ -80,6 +81,15 @@ class _Home extends StatefulWidget {
   State<_Home> createState() => _HomeState();
 }
 
+enum _Tab { today, adhkar, tasbeeh, settings }
+
+typedef _MediaChoice = ({
+  String label,
+  IconData icon,
+  String action,
+  String? preset,
+});
+
 class _HomeState extends State<_Home> with WidgetsBindingObserver {
   final _cities = CityDirectory();
   final _alarms = PrayerAlarms();
@@ -89,13 +99,15 @@ class _HomeState extends State<_Home> with WidgetsBindingObserver {
   late PrayerCalculator _calculator = PrayerCalculator(_settings);
   late DateTime _date = civilKey(_calculator.localTime(_clock.value));
   AlarmStatus _status = PrayerAlarms.unknown;
+  AlarmMedia? _media;
   Future<void> _writes = Future.value();
   late final Timer _ticker;
   bool _refreshing = false;
   bool _repositioning = false;
   bool _handlingPermission = false;
   bool _schedulingFailed = false;
-  int _tab = 0;
+  bool _mediaBusy = false;
+  _Tab _tab = _Tab.today;
   int _dayOffset = 0;
 
   @override
@@ -246,6 +258,153 @@ class _HomeState extends State<_Home> with WidgetsBindingObserver {
     return true;
   }
 
+  Future<void> _openWeek() async {
+    final day = await Navigator.of(context).push<DateTime>(
+      MaterialPageRoute(
+        builder: (context) => Scaffold(
+          appBar: AppBar(),
+          body: SafeArea(
+            top: false,
+            child: WeekScreen(
+              calculator: _calculator,
+              today: _date,
+              onSelect: (day) => Navigator.pop(context, day),
+            ),
+          ),
+        ),
+      ),
+    );
+    if (day != null && mounted) {
+      setState(() => _dayOffset = day.difference(_date).inDays);
+    }
+  }
+
+  void _selectTab(_Tab tab) {
+    setState(() {
+      _tab = tab;
+      if (tab == _Tab.today) _dayOffset = 0;
+    });
+    if (tab == _Tab.settings) unawaited(_readMedia());
+  }
+
+  Future<void> _readMedia() async {
+    if (!_alarms.supported) return;
+    try {
+      final media = await _alarms.media();
+      if (mounted) setState(() => _media = media);
+    } on Exception {
+      if (mounted) setState(() => _media = null);
+    }
+  }
+
+  Future<void> _chooseAlertMedia({required bool image}) async {
+    final media = _media;
+    if (_mediaBusy || media == null) return;
+    final List<_MediaChoice> choices = image
+        ? [
+            (
+              label: 'الخلفية الافتراضية',
+              icon: Icons.wallpaper_outlined,
+              action: 'resetImage',
+              preset: null,
+            ),
+            if (media.imagePreset)
+              (
+                label: 'أفق المساء',
+                icon: Icons.landscape_outlined,
+                action: 'setImagePreset',
+                preset: 'horizon',
+              ),
+            (
+              label: 'اختيار صورة من الجهاز',
+              icon: Icons.add_photo_alternate_outlined,
+              action: 'pickImage',
+              preset: null,
+            ),
+          ]
+        : [
+            (
+              label: media.systemSounds ? 'نغمة عبادة' : 'نغمة النظام',
+              icon: Icons.notifications_outlined,
+              action: 'resetSound',
+              preset: null,
+            ),
+            for (final preset in media.soundPresets.entries)
+              (
+                label: preset.value,
+                icon: Icons.record_voice_over_outlined,
+                action: 'setSoundPreset',
+                preset: preset.key,
+              ),
+            if (media.soundPreset)
+              (
+                label: 'نغمة عبادة الهادئة',
+                icon: Icons.music_note_outlined,
+                action: 'setSoundPreset',
+                preset: 'soft',
+              ),
+            if (media.systemSounds)
+              (
+                label: 'اختيار نغمة من الهاتف',
+                icon: Icons.library_music_outlined,
+                action: 'pickTone',
+                preset: null,
+              ),
+            (
+              label: 'اختيار ملف صوتي',
+              icon: Icons.audio_file_outlined,
+              action: 'pickSound',
+              preset: null,
+            ),
+          ];
+    final selected = await showModalBottomSheet<_MediaChoice>(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (sheetContext) => SafeArea(
+        child: ListView(
+          shrinkWrap: true,
+          padding: const EdgeInsetsDirectional.fromSTEB(16, 0, 16, 16),
+          children: [
+            ListTile(
+              title: Text(image ? 'صورة التنبيه' : 'نغمة التنبيه'),
+              subtitle: image && media.imageScope == 'notification'
+                  ? const Text(
+                      'تظهر الصورة عند توسيع الإشعار العادي على iPhone.',
+                    )
+                  : !image && media.soundPresets.isNotEmpty
+                  ? const Text('مقاطع أذان مدمجة تعمل بدون إنترنت.')
+                  : null,
+            ),
+            for (final choice in choices)
+              ListTile(
+                leading: Icon(choice.icon),
+                title: Text(choice.label),
+                selected:
+                    choice.label ==
+                    (image
+                        ? media.image ?? choices.first.label
+                        : media.sound ?? choices.first.label),
+                onTap: () => Navigator.pop(sheetContext, choice),
+              ),
+          ],
+        ),
+      ),
+    );
+    if (selected == null || !mounted) return;
+    setState(() => _mediaBusy = true);
+    try {
+      await _alarms.changeMedia(selected.action, selected.preset);
+      await _readMedia();
+      if (mounted) _schedule();
+    } on PlatformException catch (error) {
+      if (mounted) _message(error.message ?? 'تعذّر تغيير تخصيص التنبيه.');
+    } finally {
+      if (mounted) setState(() => _mediaBusy = false);
+    }
+  }
+
   void _message(String message) {
     _messages.currentState?.showSnackBar(SnackBar(content: Text(message)));
   }
@@ -315,15 +474,9 @@ class _HomeState extends State<_Home> with WidgetsBindingObserver {
           body: SafeArea(
             bottom: false,
             child: switch (_tab) {
-              1 => WeekScreen(
-                calculator: _calculator,
-                today: _date,
-                onSelect: (date) => setState(() {
-                  _dayOffset = date.difference(_date).inDays;
-                  _tab = 0;
-                }),
-              ),
-              2 => SettingsScreen(
+              _Tab.adhkar => const AdhkarScreen(),
+              _Tab.tasbeeh => const TasbeehScreen(),
+              _Tab.settings => SettingsScreen(
                 settings: _settings,
                 status: _status,
                 schedulingFailed: _schedulingFailed,
@@ -332,14 +485,19 @@ class _HomeState extends State<_Home> with WidgetsBindingObserver {
                 onAlerts: _setAlerts,
                 onPermission: _request,
                 onTest: _testAlert,
+                media: _media,
+                mediaBusy: _mediaBusy,
+                onSound: () => _chooseAlertMedia(image: false),
+                onImage: () => _chooseAlertMedia(image: true),
               ),
-              _ => TodayScreen(
+              _Tab.today => TodayScreen(
                 calculator: _calculator,
                 today: _date,
                 offset: _dayOffset,
                 clock: _clock,
                 onLocation: _choosePlace,
-                onAlerts: () => setState(() => _tab = 2),
+                onAlerts: () => _selectTab(_Tab.settings),
+                onWeek: _openWeek,
                 onExactAlarm:
                     Theme.of(context).platform == TargetPlatform.android &&
                         _settings.alarms &&
@@ -358,26 +516,37 @@ class _HomeState extends State<_Home> with WidgetsBindingObserver {
             decoration: BoxDecoration(
               border: Border(top: BorderSide(color: palette.line)),
             ),
-            child: NavigationBar(
-              selectedIndex: _tab,
-              onDestinationSelected: (index) => setState(() {
-                _tab = index;
-                if (index == 0) _dayOffset = 0;
-              }),
-              destinations: const [
-                NavigationDestination(
-                  icon: Icon(Icons.schedule_outlined),
-                  label: 'اليوم',
+            child: Center(
+              heightFactor: 1,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 680),
+                child: NavigationBar(
+                  selectedIndex: _tab.index,
+                  labelBehavior: MediaQuery.textScalerOf(context).scale(12) > 16
+                      ? NavigationDestinationLabelBehavior.onlyShowSelected
+                      : NavigationDestinationLabelBehavior.alwaysShow,
+                  onDestinationSelected: (index) =>
+                      _selectTab(_Tab.values[index]),
+                  destinations: const [
+                    NavigationDestination(
+                      icon: Icon(Icons.wb_twilight_outlined),
+                      label: 'اليوم',
+                    ),
+                    NavigationDestination(
+                      icon: Icon(Icons.auto_stories_outlined),
+                      label: 'الأذكار',
+                    ),
+                    NavigationDestination(
+                      icon: Icon(Icons.blur_circular_rounded),
+                      label: 'السبحة',
+                    ),
+                    NavigationDestination(
+                      icon: Icon(Icons.tune_rounded),
+                      label: 'الإعدادات',
+                    ),
+                  ],
                 ),
-                NavigationDestination(
-                  icon: Icon(Icons.calendar_month_outlined),
-                  label: 'الجدول',
-                ),
-                NavigationDestination(
-                  icon: Icon(Icons.tune_rounded),
-                  label: 'الإعدادات',
-                ),
-              ],
+              ),
             ),
           ),
         ),

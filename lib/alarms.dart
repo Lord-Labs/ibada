@@ -12,6 +12,17 @@ typedef AlarmStatus = ({
   bool alarmKit,
 });
 
+typedef AlarmMedia = ({
+  String? sound,
+  String? image,
+  String? imageScope,
+  bool systemSounds,
+  bool soundPreset,
+  Map<String, String> soundPresets,
+  bool imageSupported,
+  bool imagePreset,
+});
+
 class PrayerAlarms {
   static const _channel = MethodChannel('app.ibada/alarms');
 
@@ -38,6 +49,29 @@ class PrayerAlarms {
 
   Future<void> request(String permission) =>
       _channel.invokeMethod<void>('request', permission);
+
+  Future<AlarmMedia?> media() async {
+    final state = await _channel.invokeMapMethod<String, Object?>(
+      'mediaStatus',
+    );
+    if (state == null) return null;
+    final soundPresets = state['soundPresets'];
+    return (
+      sound: state['sound'] as String?,
+      image: state['image'] as String?,
+      imageScope: state['imageScope'] as String?,
+      systemSounds: state['systemSounds'] == true,
+      soundPreset: state['soundPreset'] == true,
+      soundPresets: soundPresets is Map
+          ? Map<String, String>.from(soundPresets)
+          : const <String, String>{},
+      imageSupported: state['imageSupported'] == true,
+      imagePreset: state['imagePreset'] == true,
+    );
+  }
+
+  Future<void> changeMedia(String action, [String? preset]) =>
+      _channel.invokeMethod<void>(action, preset);
 
   Future<void> replace(PrayerCalculator calculator, DateTime now) async {
     final settings = calculator.settings;

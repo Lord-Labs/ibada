@@ -24,6 +24,7 @@ void main() {
       final clock = ValueNotifier(DateTime.utc(2026, 11, 23, 12, 30));
       addTearDown(clock.dispose);
       var requested = false;
+      var openedWeek = false;
       await tester.pumpWidget(
         MaterialApp(
           locale: const Locale('ar'),
@@ -44,6 +45,7 @@ void main() {
               clock: clock,
               onLocation: () => requested = true,
               onAlerts: () {},
+              onWeek: () => openedWeek = true,
               onDay: (_) {},
               onPrayer: (_) {},
             ),
@@ -54,6 +56,9 @@ void main() {
       expect(tester.takeException(), isNull);
       await tester.tap(find.text('القاهرة'));
       expect(requested, isTrue);
+      await tester.scrollUntilVisible(find.text('جدول الأسبوع'), 120);
+      await tester.tap(find.text('جدول الأسبوع'));
+      expect(openedWeek, isTrue);
       await tester.scrollUntilVisible(find.text('الصلاة القادمة'), 120);
       expect(find.text('الصلاة القادمة'), findsOneWidget);
       await tester.drag(find.byType(ListView), const Offset(0, -500));

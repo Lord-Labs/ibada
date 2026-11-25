@@ -8,6 +8,12 @@
 
 /* Begin PBXBuildFile section */
 		BDAA10000000000000000002 /* PrayerAlarmBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = BDAA10000000000000000001 /* PrayerAlarmBridge.swift */; };
+		BDAA10000000000000000004 /* PrayerAlertMedia.swift in Sources */ = {isa = PBXBuildFile; fileRef = BDAA10000000000000000003 /* PrayerAlertMedia.swift */; };
+		BDAA10000000000000000006 /* ibada-soft.wav in Resources */ = {isa = PBXBuildFile; fileRef = BDAA10000000000000000005 /* ibada-soft.wav */; };
+		BDAA1000000000000000000A /* adhan_medina.wav in Resources */ = {isa = PBXBuildFile; fileRef = BDAA10000000000000000009 /* adhan_medina.wav */; };
+		BDAA1000000000000000000C /* adhan_classic.wav in Resources */ = {isa = PBXBuildFile; fileRef = BDAA1000000000000000000B /* adhan_classic.wav */; };
+		BDAA1000000000000000000E /* adhan_aasim.wav in Resources */ = {isa = PBXBuildFile; fileRef = BDAA1000000000000000000D /* adhan_aasim.wav */; };
+		BDAA10000000000000000008 /* ibada-alarm-horizon.jpg in Resources */ = {isa = PBXBuildFile; fileRef = BDAA10000000000000000007 /* ibada-alarm-horizon.jpg */; };
 		1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */ = {isa = PBXBuildFile; fileRef = 1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */; };
 		331C808B294A63AB00263BE5 /* RunnerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 331C807B294A618700263BE5 /* RunnerTests.swift */; };
 		3B3967161E833CAA004F5970 /* AppFrameworkInfo.plist in Resources */ = {isa = PBXBuildFile; fileRef = 3B3967151E833CAA004F5970 /* AppFrameworkInfo.plist */; };
@@ -44,6 +50,12 @@
 
 /* Begin PBXFileReference section */
 		BDAA10000000000000000001 /* PrayerAlarmBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrayerAlarmBridge.swift; sourceTree = "<group>"; };
+		BDAA10000000000000000003 /* PrayerAlertMedia.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrayerAlertMedia.swift; sourceTree = "<group>"; };
+		BDAA10000000000000000005 /* ibada-soft.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = "ibada-soft.wav"; sourceTree = "<group>"; };
+		BDAA10000000000000000009 /* adhan_medina.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = adhan_medina.wav; sourceTree = "<group>"; };
+		BDAA1000000000000000000B /* adhan_classic.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = adhan_classic.wav; sourceTree = "<group>"; };
+		BDAA1000000000000000000D /* adhan_aasim.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = adhan_aasim.wav; sourceTree = "<group>"; };
+		BDAA10000000000000000007 /* ibada-alarm-horizon.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "ibada-alarm-horizon.jpg"; sourceTree = "<group>"; };
 		1498D2321E8E86230040F4C2 /* GeneratedPluginRegistrant.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = GeneratedPluginRegistrant.h; sourceTree = "<group>"; };
 		1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GeneratedPluginRegistrant.m; sourceTree = "<group>"; };
 		331C807B294A618700263BE5 /* RunnerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunnerTests.swift; sourceTree = "<group>"; };
@@ -125,6 +137,12 @@
 				1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */,
 				74858FAE1ED2DC5600515810 /* AppDelegate.swift */,
 				BDAA10000000000000000001 /* PrayerAlarmBridge.swift */,
+				BDAA10000000000000000003 /* PrayerAlertMedia.swift */,
+				BDAA10000000000000000005 /* ibada-soft.wav */,
+				BDAA10000000000000000009 /* adhan_medina.wav */,
+				BDAA1000000000000000000B /* adhan_classic.wav */,
+				BDAA1000000000000000000D /* adhan_aasim.wav */,
+				BDAA10000000000000000007 /* ibada-alarm-horizon.jpg */,
 				7884E8672EC3CC0400C636F2 /* SceneDelegate.swift */,
 				74858FAD1ED2DC5600515810 /* Runner-Bridging-Header.h */,
 			);
@@ -232,6 +250,11 @@
 				3B3967161E833CAA004F5970 /* AppFrameworkInfo.plist in Resources */,
 				97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */,
 				97C146FC1CF9000F007C117D /* Main.storyboard in Resources */,
+				BDAA10000000000000000006 /* ibada-soft.wav in Resources */,
+				BDAA1000000000000000000A /* adhan_medina.wav in Resources */,
+				BDAA1000000000000000000C /* adhan_classic.wav in Resources */,
+				BDAA1000000000000000000E /* adhan_aasim.wav in Resources */,
+				BDAA10000000000000000008 /* ibada-alarm-horizon.jpg in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -286,6 +309,7 @@
 			files = (
 				74858FAF1ED2DC5600515810 /* AppDelegate.swift in Sources */,
 				BDAA10000000000000000002 /* PrayerAlarmBridge.swift in Sources */,
+				BDAA10000000000000000004 /* PrayerAlertMedia.swift in Sources */,
 				1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */,
 				7884E8682EC3CC0700C636F2 /* SceneDelegate.swift in Sources */,
 			);

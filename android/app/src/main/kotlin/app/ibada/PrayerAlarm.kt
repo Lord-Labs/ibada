@@ -20,7 +20,6 @@ import android.content.res.ColorStateList
 import android.graphics.Color
 import android.graphics.Typeface
 import android.media.AudioAttributes
-import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
@@ -29,6 +28,7 @@ import android.view.Gravity
 import android.view.ViewGroup
 import android.view.WindowManager
 import android.widget.Button
+import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
@@ -81,8 +81,7 @@ internal object PrayerAlarm {
     }
 
     fun channelSettings(context: Context): String {
-        channels(context)
-        return if (store(context).getBoolean("fullScreen", true)) ALARM_CHANNEL else CHANNEL
+        return activeChannel(context, store(context).getBoolean("fullScreen", true))
     }
 
     fun status(context: Context): Map<String, Boolean> {
@@ -92,7 +91,7 @@ internal object PrayerAlarm {
             "notifications" to (notificationAllowed(context) && active.importance != NotificationManager.IMPORTANCE_NONE),
             "exact" to exact(context),
             "fullScreen" to (fullScreen(context) &&
-                (active.id != ALARM_CHANNEL || active.importance >= NotificationManager.IMPORTANCE_HIGH)),
+                (!active.id.startsWith(ALARM_CHANNEL) || active.importance >= NotificationManager.IMPORTANCE_HIGH)),
         )
     }
 
@@ -207,30 +206,38 @@ internal object PrayerAlarm {
         notify(context, "حان موعد ${labels.joinToString(" و")}", time, saved.getBoolean("fullScreen", true))
     }
 
-    private fun channels(context: Context) {
+    private fun activeChannel(context: Context, full: Boolean): String {
         val manager = context.getSystemService(NotificationManager::class.java)
-        val sound = Uri.parse("android.resource://${context.packageName}/raw/prayer_chime")
-        for ((id, name, usage) in listOf(
-            Triple(CHANNEL, "إشعارات الصلاة", AudioAttributes.USAGE_NOTIFICATION_EVENT),
-            Triple(ALARM_CHANNEL, "منبّه الصلاة", AudioAttributes.USAGE_ALARM),
-        )) {
-            manager.createNotificationChannel(
-                NotificationChannel(id, name, NotificationManager.IMPORTANCE_HIGH).apply {
-                    lockscreenVisibility = Notification.VISIBILITY_PUBLIC
-                    enableVibration(true)
-                    setSound(sound, AudioAttributes.Builder()
-                        .setUsage(usage).setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION).build())
-                },
-            )
+        val base = if (full) ALARM_CHANNEL else CHANNEL
+        val (suffix, sound) = PrayerAlertMedia.sound(context)
+        val id = base + suffix
+        if (manager.getNotificationChannel(id) != null) return id
+        val original = manager.getNotificationChannel(base)
+        val title = if (full) "منبّه الصلاة" else "إشعارات الصلاة"
+        val name = when (suffix) {
+            "" -> title
+            "_import" -> "$title · صوت من الجهاز"
+            else -> "$title · ${PrayerAlertMedia.status(context)["sound"]}"
         }
+        val channel = NotificationChannel(id, name, original?.importance ?: NotificationManager.IMPORTANCE_HIGH).apply {
+            lockscreenVisibility = original?.lockscreenVisibility ?: Notification.VISIBILITY_PUBLIC
+            enableLights(original?.shouldShowLights() ?: false)
+            original?.let { lightColor = it.lightColor; vibrationPattern = it.vibrationPattern }
+            enableVibration(original?.shouldVibrate() ?: true)
+            setShowBadge(original?.canShowBadge() ?: true)
+            setSound(if (original != null && original.sound == null) null else sound, AudioAttributes.Builder()
+                .setUsage(if (full) AudioAttributes.USAGE_ALARM else AudioAttributes.USAGE_NOTIFICATION_EVENT)
+                .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION).build())
+        }
+        manager.createNotificationChannel(channel)
+        return id
     }
 
     private fun notify(context: Context, title: String, time: Long, wantsFullScreen: Boolean) {
         if (!notificationAllowed(context)) return
-        channels(context)
         val manager = context.getSystemService(NotificationManager::class.java)
         val id = time.hashCode()
-        val channel = if (wantsFullScreen) ALARM_CHANNEL else CHANNEL
+        val channel = activeChannel(context, wantsFullScreen)
         val alarm = Intent(context, PrayerAlarmActivity::class.java)
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
             .putExtra(TITLE, title).putExtra(SHOWN_AT, System.currentTimeMillis()).putExtra(NOTIFICATION_ID, id)
@@ -382,7 +389,6 @@ class PrayerAlarmActivity : Activity() {
             gravity = Gravity.CENTER
             layoutDirection = LinearLayout.LAYOUT_DIRECTION_RTL
             setPadding(px(26), px(60), px(26), px(60))
-            setBackgroundColor(pine)
         }
         stack.addView(TextView(this).apply {
             text = "عبادة"
@@ -408,10 +414,17 @@ class PrayerAlarmActivity : Activity() {
             backgroundTintList = ColorStateList.valueOf(amber)
             setOnClickListener { dismiss() }
         }, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
-        setContentView(ScrollView(this).apply {
+        val scroll = ScrollView(this).apply {
             isFillViewport = true
-            setBackgroundColor(pine)
             addView(stack)
+        }
+        setContentView(FrameLayout(this).apply {
+            setBackgroundColor(pine)
+            PrayerAlertMedia.background(this@PrayerAlarmActivity)?.let { image ->
+                image.setColorFilter(Color.argb(168, 10, 32, 26), android.graphics.PorterDuff.Mode.SRC_ATOP)
+                addView(image)
+            }
+            addView(scroll)
         })
     }
 

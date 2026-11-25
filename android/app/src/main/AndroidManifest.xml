@@ -52,6 +52,13 @@
             android:taskAffinity="app.ibada.alarm"
             android:theme="@style/PrayerAlarmTheme"
             android:turnScreenOn="true"/>
+        <provider
+            android:name=".PrayerSoundProvider"
+            android:authorities="${applicationId}.prayer-media"
+            android:directBootAware="true"
+            android:exported="true"
+            android:permission="android.permission.STATUS_BAR_SERVICE"
+            android:grantUriPermissions="true"/>
         <receiver
             android:name=".PrayerAlarmReceiver"
             android:directBootAware="true"

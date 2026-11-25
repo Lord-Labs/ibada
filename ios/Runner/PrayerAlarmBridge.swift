@@ -1,4 +1,7 @@
 import BackgroundTasks
+#if canImport(AlarmKit)
+import ActivityKit
+#endif
 import Flutter
 import SwiftUI
 import UIKit
@@ -26,6 +29,7 @@ private struct ScheduledPrayer: Codable {
 final class PrayerAlarmBridge {
   private let center = UNUserNotificationCenter.current()
   private let defaults = UserDefaults.standard
+  private let media = PrayerAlertMedia()
   private let planKey = "ibada-prayer-plan"
   private let refreshID = "app.ibada.refresh"
   private var operation: Task<Void, Never>?
@@ -43,7 +47,23 @@ final class PrayerAlarmBridge {
     }
   }
 
-  private func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
+  private func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult, pickedFile: URL? = nil) {
+    if pickedFile == nil && (call.method == "pickSound" || call.method == "pickImage") {
+      let kind: PrayerAlertMedia.Kind = call.method == "pickSound" ? .sound : .image
+      Task {
+        do {
+          if let file = try await media.choose(kind) {
+            handle(call, result: result, pickedFile: file)
+          } else {
+            result(nil)
+          }
+        } catch {
+          result(FlutterError(code: "PRAYER_ALARM", message: error.localizedDescription, details: nil))
+        }
+      }
+      return
+    }
+
     let previous = operation
     operation = Task {
       await previous?.value
@@ -56,6 +76,24 @@ final class PrayerAlarmBridge {
                   "fullScreen": alarm.authorized, "alarmKit": alarm.available])
         case "request":
           try await request(call.arguments as? String)
+          result(nil)
+        case "mediaStatus":
+          result(media.status)
+        case "pickSound", "pickImage", "resetSound", "resetImage", "setSoundPreset", "setImagePreset":
+          var selection = media.selection
+          switch call.method {
+          case "pickSound":
+            guard let pickedFile else { throw PrayerAlertMedia.MediaError.invalidAudio }
+            selection.sound = try media.importFile(pickedFile, kind: .sound)
+          case "pickImage":
+            guard let pickedFile else { throw PrayerAlertMedia.MediaError.invalidImage }
+            selection.image = try media.importFile(pickedFile, kind: .image)
+          case "resetSound": selection.sound = nil
+          case "resetImage": selection.image = nil
+          case "setSoundPreset": selection.sound = try media.preset(call.arguments as? String, kind: .sound)
+          default: selection.image = try media.preset(call.arguments as? String, kind: .image)
+          }
+          try await changeMedia(to: selection)
           result(nil)
         case "replace":
           guard let args = call.arguments as? [String: Any],
@@ -78,7 +116,7 @@ final class PrayerAlarmBridge {
             try await scheduleAlarmKitTest(event)
           } else {
             guard await notificationsAllowed() else { throw CocoaError(.userCancelled) }
-            try await center.add(notification(event))
+            try await addNotification(event)
           }
           result(nil)
         default:
@@ -130,7 +168,53 @@ final class PrayerAlarmBridge {
     return (false, false)
   }
 
-  private func apply(_ plan: [ScheduledPrayer]) async throws {
+  private var savedPlan: [ScheduledPrayer] {
+    defaults.data(forKey: planKey)
+      .flatMap { try? JSONDecoder().decode([ScheduledPrayer].self, from: $0) } ?? []
+  }
+
+  private func changeMedia(to next: PrayerAlertMedia.Selection) async throws {
+    let previous = media.selection
+    guard previous != next else { return }
+    let changedSound = previous.sound != next.sound
+    let plan = savedPlan
+    do {
+      try media.save(next)
+      try await apply(plan, replacingMedia: true, replacingNativeSound: changedSound)
+      if changedSound && previous.sound?.fileName.hasSuffix(".caf") == true {
+        try await cancelPendingTests()
+      }
+      media.removeUnused(previous, keeping: next)
+    } catch {
+      let originalError = error
+      do {
+        try media.save(previous)
+        try await apply(plan, replacingMedia: true, replacingNativeSound: changedSound)
+        media.removeUnused(next, keeping: previous)
+      } catch {
+        // Retain both files if a partially updated schedule can still reference either.
+      }
+      throw originalError
+    }
+  }
+
+  private func cancelPendingTests() async throws {
+    #if canImport(AlarmKit)
+      if #available(iOS 26.0, *), alarmKitStatus().authorized {
+        let manager = AlarmManager.shared
+        for alarm in try manager.alarms where alarm.state == .scheduled &&
+            alarm.id.uuidString.contains("-0009-") {
+          try manager.cancel(id: alarm.id)
+        }
+      }
+    #endif
+    let tests = await center.pendingNotificationRequests().map(\.identifier)
+      .filter { $0.hasPrefix("ibada-") && $0.contains("-0009-") }
+    center.removePendingNotificationRequests(withIdentifiers: tests)
+  }
+
+  private func apply(_ plan: [ScheduledPrayer], replacingMedia: Bool = false,
+                     replacingNativeSound: Bool = false) async throws {
     let future = plan.filter { $0.date > Date() }
     #if canImport(AlarmKit)
       if #available(iOS 26.0, *), alarmKitStatus().authorized {
@@ -139,16 +223,17 @@ final class PrayerAlarmBridge {
         do {
           let existing = try manager.alarms
           let wanted = Set(native.map(\.id))
-          for alarm in existing where alarm.state == .scheduled && !wanted.contains(alarm.id) &&
-              !alarm.id.uuidString.contains("-0009-") {
+          var scheduled = Set(existing.map(\.id))
+          for alarm in existing where alarm.state == .scheduled &&
+              (replacingNativeSound || !wanted.contains(alarm.id)) && !alarm.id.uuidString.contains("-0009-") {
             try manager.cancel(id: alarm.id)
+            scheduled.remove(alarm.id)
           }
-          let scheduled = Set(existing.map(\.id))
           for event in native where !scheduled.contains(event.id) {
             try await addNative(event)
           }
           let fallback = await notificationsAllowed() ? Array(future.dropFirst(25).prefix(60)) : []
-          try await applyNotifications(fallback)
+          try await applyNotifications(fallback, replacingMedia: replacingMedia)
           return
         } catch {
           for alarm in try manager.alarms where alarm.state == .scheduled &&
@@ -159,25 +244,42 @@ final class PrayerAlarmBridge {
         }
       }
     #endif
-    try await applyNotifications(await notificationsAllowed() ? Array(future.prefix(60)) : [])
+    try await applyNotifications(await notificationsAllowed() ? Array(future.prefix(60)) : [],
+                                 replacingMedia: replacingMedia)
   }
 
-  private func applyNotifications(_ wanted: [ScheduledPrayer]) async throws {
+  private func applyNotifications(_ wanted: [ScheduledPrayer], replacingMedia: Bool) async throws {
     let pending = await center.pendingNotificationRequests()
       .map(\.identifier).filter { $0.hasPrefix("ibada-") && !$0.contains("-0009-") }
     let next = Set(wanted.map(\.notificationID))
     center.removePendingNotificationRequests(withIdentifiers: pending.filter { !next.contains($0) })
     let existing = Set(pending)
-    for event in wanted where !existing.contains(event.notificationID) {
-      try await center.add(notification(event))
+    for event in wanted where replacingMedia || !existing.contains(event.notificationID) {
+      try await addNotification(event)
     }
   }
 
-  private func notification(_ event: ScheduledPrayer) -> UNNotificationRequest {
+  private func addNotification(_ event: ScheduledPrayer) async throws {
+    if let copy = media.makeAttachmentCopy() {
+      defer { try? FileManager.default.removeItem(at: copy) }
+      if let attachment = try? UNNotificationAttachment(identifier: "ibada-photo", url: copy) {
+        do {
+          try await center.add(notification(event, attachment: attachment))
+          return
+        } catch {
+          // A rejected attachment must not prevent the scheduled prayer from alerting.
+        }
+      }
+    }
+    try await center.add(notification(event))
+  }
+
+  private func notification(_ event: ScheduledPrayer, attachment: UNNotificationAttachment? = nil) -> UNNotificationRequest {
     let content = UNMutableNotificationContent()
     content.title = event.title
     content.body = "عبادة"
-    content.sound = .default
+    content.sound = media.soundName.map { UNNotificationSound(named: UNNotificationSoundName(rawValue: $0)) } ?? .default
+    if let attachment { content.attachments = [attachment] }
     var calendar = Calendar(identifier: .gregorian)
     calendar.timeZone = TimeZone(secondsFromGMT: 0)!
     let components = calendar.dateComponents([.calendar, .year, .month, .day, .hour, .minute, .second, .timeZone],
@@ -206,8 +308,9 @@ final class PrayerAlarmBridge {
       let alert = AlarmPresentation.Alert(title: title, stopButton: stop)
       let attributes = AlarmAttributes(presentation: AlarmPresentation(alert: alert),
                                        metadata: Metadata(), tintColor: .green)
+      let sound = media.soundName.map { AlertConfiguration.AlertSound.named($0) } ?? .default
       _ = try await AlarmManager.shared.schedule(id: event.id,
-        configuration: .alarm(schedule: .fixed(event.date), attributes: attributes))
+        configuration: .alarm(schedule: .fixed(event.date), attributes: attributes, sound: sound))
     }
   #endif
 
@@ -223,8 +326,7 @@ final class PrayerAlarmBridge {
     let previous = operation
     let refresh = Task {
       await previous?.value
-      let plan = defaults.data(forKey: planKey)
-        .flatMap { try? JSONDecoder().decode([ScheduledPrayer].self, from: $0) } ?? []
+      let plan = savedPlan
       scheduleRefresh(ifNeeded: plan.last.map { $0.date > Date() } ?? false)
       do {
         try Task.checkCancellation()

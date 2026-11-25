@@ -53,6 +53,7 @@ app.*.map.json
 /android/build/
 /assets/fonts/thmanyahsans-*.otf
 /assets/fonts/Thmanyah-LICENSE.pdf
+/website/assets/thmanyah*.woff2
 
 .vercel
 .env*

@@ -4,6 +4,7 @@ import android.Manifest
 import android.app.NotificationManager
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.media.RingtoneManager
 import android.net.Uri
 import android.os.Build
 import android.provider.Settings
@@ -13,6 +14,7 @@ import io.flutter.plugin.common.MethodChannel
 
 class HomeActivity : FlutterActivity() {
     private var notificationReply: MethodChannel.Result? = null
+    private var mediaReply: MethodChannel.Result? = null
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -21,6 +23,15 @@ class HomeActivity : FlutterActivity() {
                 try {
                     when (call.method) {
                         "status" -> result.success(PrayerAlarm.status(this))
+                        "mediaStatus" -> result.success(PrayerAlertMedia.status(this))
+                        "pickSound", "pickImage", "pickTone" -> pickMedia(call.method, result)
+                        "resetSound", "resetImage", "setSoundPreset", "setImagePreset" -> {
+                            check(mediaReply == null) { "انتظر حتى يكتمل اختيار الملف." }
+                            val kind = if (call.method.contains("Sound")) "sound" else "image"
+                            val preset = if (call.method.startsWith("reset")) null else call.arguments as String
+                            PrayerAlertMedia.select(this, kind, preset)
+                            result.success(null)
+                        }
                         "replace" -> {
                             PrayerAlarm.replace(this, call.arguments as Map<*, *>)
                             result.success(null)
@@ -36,6 +47,63 @@ class HomeActivity : FlutterActivity() {
                     result.error("PRAYER_ALARM", error.message, null)
                 }
             }
+    }
+
+    private fun pickMedia(action: String, result: MethodChannel.Result) {
+        check(mediaReply == null) { "انتظر حتى يكتمل اختيار الملف." }
+        val code = when (action) {
+            "pickTone" -> 1404
+            "pickSound" -> 1405
+            else -> 1406
+        }
+        val picker = if (action == "pickTone") {
+            Intent(RingtoneManager.ACTION_RINGTONE_PICKER)
+                .putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE, RingtoneManager.TYPE_ALARM)
+                .putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_SILENT, false)
+                .putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_DEFAULT, false)
+        } else {
+            Intent(Intent.ACTION_OPEN_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE)
+                .setType(if (action == "pickSound") "audio/*" else "image/*")
+        }
+        try {
+            startActivityForResult(picker, code)
+            mediaReply = result
+        } catch (_: android.content.ActivityNotFoundException) {
+            result.error("PRAYER_MEDIA", "تعذّر فتح منتقي الملفات على الجهاز.", null)
+        }
+    }
+
+    @Deprecated("Activity result callback")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode !in 1404..1406) return
+        val reply = mediaReply ?: return
+        @Suppress("DEPRECATION")
+        val uri = if (requestCode == 1404) data?.getParcelableExtra<Uri>(RingtoneManager.EXTRA_RINGTONE_PICKED_URI)
+            else data?.data
+        if (resultCode != RESULT_OK || uri == null) {
+            mediaReply = null
+            reply.success(null)
+            return
+        }
+        Thread {
+            val failure = try {
+                PrayerAlertMedia.import(applicationContext, uri, if (requestCode == 1406) "image" else "sound",
+                    systemTone = requestCode == 1404)
+                null
+            } catch (error: Exception) {
+                when (error) {
+                    is IllegalArgumentException, is IllegalStateException -> error.message
+                    else -> null
+                } ?: "تعذّرت قراءة الملف المختار."
+            }
+            runOnUiThread {
+                mediaReply = null
+                if (!isDestroyed) {
+                    if (failure == null) reply.success(null) else reply.error("PRAYER_MEDIA", failure, null)
+                }
+            }
+        }.start()
     }
 
     private fun request(permission: String, result: MethodChannel.Result) {
