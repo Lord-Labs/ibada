@@ -3,13 +3,13 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>عبادة | مواقيت الصلاة والأذكار</title>
-  <meta name="description" content="حمّل عبادة لأندرويد. مواقيت الصلاة بدون إنترنت، وأصوات أذان، وأذكار تفاعلية وسبحة. تطبيق مجاني ومفتوح المصدر وبدون إعلانات.">
-  <meta name="theme-color" content="#f5f3e9">
+  <title>عبادة | مواقيت الصلاة والأذكار للأندرويد</title>
+  <meta name="description" content="حمّل عبادة لأندرويد. مواقيت الصلاة حسب مدينتك بدون إنترنت، وثلاثة أصوات أذان، وأذكار تفاعلية، وسبحة تحفظ عدّك. مجاني وبدون إعلانات.">
+  <meta name="theme-color" content="#f6f7ef">
   <meta property="og:type" content="website">
   <meta property="og:locale" content="ar_EG">
-  <meta property="og:title" content="عبادة | صلاتك في وقتها">
-  <meta property="og:description" content="مواقيت الصلاة والأذكار والسبحة في تطبيق عربي مجاني يعمل بدون إنترنت.">
+  <meta property="og:title" content="عبادة | مواقيت الصلاة والأذكار">
+  <meta property="og:description" content="مواقيت الصلاة، أذان تختار صوته، وأذكار وسبحة في تطبيق عربي مجاني لأندرويد.">
   <link rel="icon" href="./assets/icon.png" type="image/png">
   <link rel="stylesheet" href="./styles.css">
 </head>
@@ -21,74 +21,116 @@
         <img src="./assets/icon.png" alt="" width="42" height="42">
         <span>عبادة</span>
       </a>
-      <nav aria-label="التنقّل في الصفحة">
-        <a href="#features">المزايا</a>
+      <nav aria-label="التنقّل الرئيسي">
+        <a href="#features">مزايا التطبيق</a>
         <a href="#install">طريقة التثبيت</a>
       </nav>
-      <a class="button button-outline" href="#download">حمّل التطبيق</a>
+      <a class="button header-download" href="https://github.com/Lord-shaban/ibada/releases/download/v1.1.0/Ibada.apk">
+        تحميل التطبيق <span class="download-arrow" aria-hidden="true"></span>
+      </a>
     </div>
   </header>
 
   <main id="content" tabindex="-1">
-    <section class="hero shell" aria-labelledby="hero-title">
-      <img class="hero-photo" src="./assets/dawn-valley-1600.webp"
-           srcset="./assets/dawn-valley-800.webp 800w, ./assets/dawn-valley-1600.webp 1600w"
-           sizes="(min-width: 82rem) 76rem, 96vw" width="1600" height="900"
-           alt="" fetchpriority="high">
-      <div class="hero-copy">
-        <h1 id="hero-title">صلاتك<br>في وقتها.</h1>
-        <p>اعرف مواقيت الصلاة في مدينتك من غير إنترنت، واختر صوت الأذان، وتابع أذكارك اليومية في مكان واحد.</p>
-        <div id="download">
-          <a class="button button-primary" href="https://github.com/Lord-shaban/ibada/releases/download/v1.1.0/Ibada.apk">
-            تحميل للأندرويد <span aria-hidden="true">↓</span>
-          </a>
+    <section class="hero" aria-labelledby="hero-title">
+      <img class="hero-photo" src="./assets/valley-daylight-1600.webp"
+           srcset="./assets/valley-daylight-800.webp 800w, ./assets/valley-daylight-1600.webp 1600w"
+           sizes="100vw" width="1600" height="900" alt="" fetchpriority="high">
+      <div class="shell hero-inner">
+        <div class="hero-copy">
+          <h1 id="hero-title">مواقيت الصلاة <span>حسب مدينتك.</span></h1>
+          <p class="hero-intro">اعرف موعد صلاتك القادمة، واختر صوت الأذان، وتابع أذكارك وتسبيحك، حتى من غير إنترنت.</p>
+          <div class="hero-actions" id="download">
+            <a class="button button-primary" href="https://github.com/Lord-shaban/ibada/releases/download/v1.1.0/Ibada.apk">
+              حمّل للأندرويد <span class="download-arrow" aria-hidden="true"></span>
+            </a>
+            <a class="button button-secondary" href="#features">استكشف المزايا</a>
+          </div>
           <p class="requirements">أندرويد ٨ فأحدث <span aria-hidden="true">·</span> <bdi>APK</bdi></p>
         </div>
       </div>
     </section>
 
-    <ul class="shell product-facts" aria-label="عن التطبيق">
-      <li>مجاني</li>
-      <li>بدون إعلانات</li>
-      <li>مفتوح المصدر</li>
-    </ul>
+    <div class="shell">
+      <ul class="product-facts" aria-label="عن تطبيق عبادة" role="list">
+        <li>يعمل بدون إنترنت</li>
+        <li>مجاني وبدون إعلانات</li>
+        <li><a href="https://github.com/Lord-shaban/ibada">مفتوح المصدر</a></li>
+      </ul>
+    </div>
 
-    <section class="shell feature-section" id="features" aria-labelledby="features-title">
-      <h2 id="features-title">المواقيت والأذكار</h2>
+    <section class="shell features" id="features" aria-labelledby="features-title">
+      <h2 id="features-title">المواقيت والأذكار اليومية</h2>
       <div class="feature-grid">
-        <article class="feature feature-times">
-          <h3>مواقيت مدينتك بسرعة</h3>
-          <p>شوف الوقت المتبقي للصلاة القادمة وجدول الأسبوع. اختَر مدينتك أو استخدم موقعك واضبط طريقة الحساب حسب التقويم المحلي.</p>
-          <p>المواقيت ودليل المدن متاحان بدون إنترنت.</p>
+        <article class="feature feature-times" id="prayer-times">
+          <div class="feature-copy">
+            <h3>صلوات اليوم والأسبوع</h3>
+            <p>اعرف الوقت المتبقي للصلاة القادمة. استخدم موقعك أو اختر مدينتك من الدليل، واضبط طريقة الحساب حسب التقويم المحلي.</p>
+          </div>
+          <div class="schedule">
+            <div class="schedule-next">
+              <p class="schedule-label">القاهرة <span aria-hidden="true">·</span> مثال توضيحي</p>
+              <p>الصلاة القادمة</p>
+              <strong>العصر</strong>
+              <bdi>٠٢:٣٥ م</bdi>
+            </div>
+            <dl class="schedule-list">
+              <div><dt>الفجر</dt><dd><bdi>٠٥:٠٨ ص</bdi></dd></div>
+              <div><dt>الظهر</dt><dd><bdi>١١:٤٣ ص</bdi></dd></div>
+              <div><dt>العصر</dt><dd><bdi>٠٢:٣٥ م</bdi></dd></div>
+            </dl>
+          </div>
         </article>
-        <article class="feature feature-alerts">
-          <h3>اختَر صوت الأذان</h3>
-          <p>اضبط تنبيه كل صلاة، واختر من ثلاثة مقاطع أذان مدمجة أو استخدم ملفًا صوتيًا من جهازك.</p>
-          <p>أضف صورة من جهازك لخلفية تنبيه ملء الشاشة على أندرويد، حسب إذن النظام.</p>
+
+        <article class="feature feature-adhan" id="adhan">
+          <div class="feature-copy">
+            <h3>أذان تختار صوته</h3>
+            <p>فعّل التنبيه لكل صلاة واختر أحد المقاطع المدمجة، أو أضف ملفًا صوتيًا من هاتفك.</p>
+          </div>
+          <ul class="adhan-options" aria-label="مقاطع الأذان المدمجة" role="list">
+            <li><span>أذان المسجد النبوي</span></li>
+            <li><span>أذان آدم</span></li>
+            <li><span>أذان عاصم جاويد</span></li>
+          </ul>
+          <p class="feature-note">تقدر كمان تختار صورة لخلفية تنبيه ملء الشاشة على أندرويد.</p>
+        </article>
+
+        <article class="feature feature-adhkar" id="adhkar">
+          <div class="feature-copy">
+            <h3>أذكار تفاعلية</h3>
+            <p>اقرأ ذكرًا بذكر، وسجّل كل تكرار. يحفظ عبادة تقدّمك عشان تكمل من حيث توقفت.</p>
+          </div>
+          <ul class="adhkar-categories" aria-label="مجموعات الأذكار" role="list">
+            <li>الصباح</li>
+            <li>المساء</li>
+            <li>بعد الصلاة</li>
+            <li>قبل النوم</li>
+          </ul>
+        </article>
+
+        <article class="feature feature-tasbeeh" id="tasbeeh">
+          <div class="feature-copy">
+            <h3>سبحة تحفظ عدّك</h3>
+            <p>سبّح بحرية أو اختر هدفًا. يحتفظ التطبيق بعدّك على جهازك حتى بعد إغلاقه.</p>
+          </div>
+          <img class="tasbeeh-photo" src="./assets/prayer-beads.webp" alt="" width="900" height="600"
+               loading="lazy" decoding="async">
         </article>
       </div>
-      <article class="devotion">
-        <img class="devotion-photo" src="./assets/prayer-beads.webp" width="900" height="600"
-             alt="" loading="lazy" decoding="async">
-        <div class="devotion-copy">
-          <h3>أذكار تفاعلية وسبحة</h3>
-          <p>اقرأ أذكار الصباح والمساء وبعد الصلاة وقبل النوم، وتابع التكرارات ذكرًا بذكر.</p>
-          <p>سبّح بحرية أو اختر عددًا تستهدفه. يحفظ التطبيق تقدّم القراءة والعدّ على جهازك.</p>
-        </div>
-      </article>
     </section>
 
-    <section class="shell install-section" id="install" aria-labelledby="install-title">
-      <div>
-        <h2 id="install-title">طريقة التثبيت</h2>
+    <section class="shell install" id="install" aria-labelledby="install-title">
+      <div class="install-lead">
+        <h2 id="install-title">تحميل وتثبيت عبادة</h2>
         <a class="button button-install" href="https://github.com/Lord-shaban/ibada/releases/download/v1.1.0/Ibada.apk">
-          تنزيل ملف <bdi>APK</bdi> <span aria-hidden="true">↓</span>
+          تنزيل ملف <bdi>APK</bdi> <span class="download-arrow" aria-hidden="true"></span>
         </a>
+        <p class="requirements">أندرويد ٨ فأحدث</p>
       </div>
       <ol class="install-steps">
-        <li>حمّل الملف وافتحه من التنزيلات على هاتفك.</li>
-        <li>لو طلب أندرويد السماح بالتثبيت من المتصفح، فعّل الإذن وأكمل التثبيت.</li>
-        <li>افتح عبادة واسمح بالإشعارات. حدّد موقعك أو اختر مدينتك من داخل التطبيق.</li>
+        <li><strong>حمّل الملف</strong> وافتحه من التنزيلات.</li>
+        <li><strong>ثبّت التطبيق</strong> واسمح بالتثبيت من هذا المصدر إذا طلب أندرويد ذلك.</li>
+        <li><strong>افتح عبادة</strong> واختَر مدينتك وفعّل التنبيهات.</li>
       </ol>
     </section>
   </main>
@@ -99,10 +141,7 @@
         <img src="./assets/icon.png" alt="" width="34" height="34" loading="lazy">
         <span>عبادة</span>
       </a>
-      <div class="footer-links">
-        <a href="https://github.com/Lord-shaban/ibada">الكود على <bdi>GitHub</bdi></a>
-        <a href="https://github.com/Lord-shaban/ibada/blob/main/LICENSE">ترخيص <bdi>MIT</bdi></a>
-      </div>
+      <a class="source-link" href="https://github.com/Lord-shaban/ibada">الكود على <bdi>GitHub</bdi> · ترخيص <bdi>MIT</bdi></a>
     </div>
   </footer>
 </body>
