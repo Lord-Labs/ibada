@@ -5,6 +5,12 @@
   "cleanUrls": true,
   "redirects": [
     {
+      "source": "/",
+      "has": [{ "type": "host", "value": "ibada-gamma.vercel.app" }],
+      "destination": "https://ibada.lordlabs.tech/",
+      "permanent": true
+    },
+    {
       "source": "/:path*",
       "has": [{ "type": "host", "value": "ibada-gamma.vercel.app" }],
       "destination": "https://ibada.lordlabs.tech/:path*",
