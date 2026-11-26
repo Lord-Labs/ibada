@@ -7,14 +7,14 @@
 <p align="center">Offline prayer times, adhan alerts, daily adhkar, and a tasbeeh counter.</p>
 
 <p align="center">
-  <a href="https://github.com/Lord-shaban/ibada/releases/latest/download/Ibada.apk"><img src="https://img.shields.io/badge/Download-Android_APK-285D46?logo=android&amp;logoColor=white" alt="Download the Android APK"></a>
+  <a href="https://github.com/Lord-Labs/ibada/releases/latest/download/Ibada.apk"><img src="https://img.shields.io/badge/Download-Android_APK-285D46?logo=android&amp;logoColor=white" alt="Download the Android APK"></a>
   <a href="#development"><img src="https://img.shields.io/badge/Built_with-Flutter-286285?logo=flutter&amp;logoColor=white" alt="Built with Flutter"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-5B6470?logo=opensourceinitiative&amp;logoColor=white" alt="MIT license"></a>
 </p>
 
 <p align="center">
-  <a href="https://ibada-gamma.vercel.app/">Website</a> ·
-  <a href="https://github.com/Lord-shaban/ibada/releases/latest">Release notes</a> ·
+  <a href="https://ibada.lordlabs.tech/">Website</a> ·
+  <a href="https://github.com/Lord-Labs/ibada/releases/latest">Release notes</a> ·
   <a href="#screenshots">Screenshots</a> ·
   <a href="#development">Development</a>
 </p>
@@ -41,7 +41,7 @@ Ibada is a free, open-source app with an Arabic interface. Prayer calculations, 
 
 ## Download for Android
 
-Ibada supports **Android 8 or later**. [Download the latest APK](https://github.com/Lord-shaban/ibada/releases/latest/download/Ibada.apk)
+Ibada supports **Android 8 or later**. [Download the latest APK](https://github.com/Lord-Labs/ibada/releases/latest/download/Ibada.apk)
 
 1. Open the APK from your downloads. Android may ask you to allow installation from the source you used.
 2. Open Ibada and select a city or use your current location. The app shows Cairo's times until you select a location.
@@ -94,7 +94,7 @@ The website uses `thmanyahsans-Regular.woff2`, `thmanyahsans-Bold.woff2`, and `t
 
 ## Contributing
 
-When reporting a problem, include your Ibada version, device, and operating system. For a prayer-time discrepancy, include the city, date, calculation method, and the timetable you compared it with. [Report an issue](https://github.com/Lord-shaban/ibada/issues)
+When reporting a problem, include your Ibada version, device, and operating system. For a prayer-time discrepancy, include the city, date, calculation method, and the timetable you compared it with. [Report an issue](https://github.com/Lord-Labs/ibada/issues)
 
 ## License and credits
 
