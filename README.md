@@ -92,6 +92,8 @@ To build the Android APK, run `flutter build apk --release`. The default build u
 
 The website uses `thmanyahsans-Regular.woff2`, `thmanyahsans-Bold.woff2`, and `thmanyahserifdisplay-Regular.woff2` in `website/assets/`. Run `python -m http.server 8000 --directory website` to serve it locally.
 
+Git exports omit these separately supplied fonts. For a Vercel deployment from a Git export, copy all three files into its `website/assets/` directory before uploading it. After deployment, check that the browser successfully loads all three fonts on the download page.
+
 ## Contributing
 
 When reporting a problem, include your Ibada version, device, and operating system. For a prayer-time discrepancy, include the city, date, calculation method, and the timetable you compared it with. [Report an issue](https://github.com/Lord-Labs/ibada/issues)
